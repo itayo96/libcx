@@ -3,14 +3,16 @@
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-extern "C"  void *dlsym(void *, const char *);
+#include <thread>
+#include <unistd.h>
+#include <sys/types.h>
 
 static struct main
 {
     main()
     {
-        printf("Called the main\n");
+        // This code actually runs before programs main and even before its static constructors
+        printf("libcx main start pid = %d\n", static_cast<int>(getpid()));
     }
 } _;
 
