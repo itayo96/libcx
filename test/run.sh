@@ -7,4 +7,4 @@ cd ../
 cp example/bin/example env/example
 
 cd env
-LD_PRELOAD=libcx.so ./example
+LD_PRELOAD=$(pwd)/libcx.so ./example
