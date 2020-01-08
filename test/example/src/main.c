@@ -9,7 +9,7 @@ void _()
 
 void main()
 {
-    for (int i = 0; i<500; i++) _();
+    for (int i = 0; i<5; i++) _();
 
-    printf("Omer\n");
+    printf("Omer2\n");
 }

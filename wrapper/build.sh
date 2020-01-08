@@ -6,4 +6,4 @@ then
     mkdir bin
 fi
 
-gcc src/libcx.c -fPIC -shared -o bin/libcx.so -ldl
+g++ src/libcx.cpp -fPIC -shared -o bin/libcx.so -ldl
