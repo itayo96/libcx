@@ -5,7 +5,6 @@ import struct
 
 log = getLogger(__name__)
 
-
 class DaemonUDSServer:
     """
     An UDS based server for the agents to communicate with. This class handles the communication and not the actual
