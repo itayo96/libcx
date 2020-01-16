@@ -16,14 +16,21 @@ struct connection_msg
     uint32_t pid;
 };
 
+std::string home_relative_path(const std::string& path)
+{
+    return std::string(getenv("HOME")) + path;
+}
+
 static struct main
 {
     main()
     {
         struct sockaddr_un addr;
         int fd, size;
-        char * sock_path = "~/.libcx/daemon.uds";
+        auto path =  home_relative_path("/.libcx/daemon.uds");
+        const char* sock_path = path.c_str();
         struct connection_msg msg;
+
 
         fd = socket(AF_UNIX, SOCK_STREAM, 0);
         if (fd == -1)
@@ -34,7 +41,9 @@ static struct main
 
         memset(&addr, 0, sizeof(addr));
         addr.sun_family = AF_UNIX;
-        strncpy(addr.sun_path, sock_path, sizeof(sock_path));
+        strncpy(addr.sun_path, sock_path, strlen(sock_path));
+
+        printf("Connecting to %s\n", addr.sun_path);
 
         if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
         {

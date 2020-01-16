@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 void fu_horev()
 {
@@ -14,4 +15,6 @@ void main()
     for (int i = 0; i<5; i++) fu_horev();
 
     printf("Omer2\n");
+
+    sleep(1);
 }

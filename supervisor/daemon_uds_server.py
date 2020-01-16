@@ -1,15 +1,18 @@
 import logging
 import os
 import socket
-
+import binascii
+import struct
+from proc_status import get_process_info
 
 class DaemonUDSServer:
     """
     An UDS based server for the agents to communicate with. This class handles the communication and not the actual
     logic.
     """
+
     def __init__(self, address, libc_usage_callback):
-        logging.debug("Creating daemon server", address)
+        logging.debug("Creating daemon server {}".format(address))
         self._create_server(address)
 
     def run(self):
@@ -27,6 +30,9 @@ class DaemonUDSServer:
         connection, client_address = self._control_socket.accept()
 
         data = connection.recv(8)
+        opcode, pid = struct.unpack("II", data)
+
+        logging.debug("opcode = {}, pid = {}, process name = {}".format(opcode, pid, get_process_info(pid).name))
 
         logging.debug(data)
 
