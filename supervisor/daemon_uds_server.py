@@ -1,9 +1,10 @@
-import logging
+from logging import getLogger
 import os
-import socket
-import binascii
+import asyncio
 import struct
-from proc_status import get_process_info
+
+log = getLogger(__name__)
+
 
 class DaemonUDSServer:
     """
@@ -11,54 +12,57 @@ class DaemonUDSServer:
     logic.
     """
 
-    def __init__(self, address, libc_usage_callback):
-        logging.debug("Creating daemon server {}".format(address))
-        self._create_server(address)
+    def __init__(self, address, register_client_callback):
+        self._register_client_callback = register_client_callback
 
-    def run(self):
-        """
-        Starts running the server. This method is blocking
-        :return: None
-        """
-        if not self.is_open():
-            raise self.ServerNotRunning()
+        self._loop = asyncio.get_event_loop()
+        server_coro = self._create_server(address)
+        server = self._loop.run_until_complete(server_coro)
 
-        self._control_socket.listen(1)
+        self._loop.run_forever()
 
-        logging.debug("Received a new client")
+        server.close()
+        self._loop.run_until_complete(server.wait_closed())
+        self._loop.close()
 
-        connection, client_address = self._control_socket.accept()
-
-        data = connection.recv(8)
-        opcode, pid = struct.unpack("II", data)
-
-        logging.debug("opcode = {}, pid = {}, process name = {}".format(opcode, pid, get_process_info(pid).name))
-
-        logging.debug(data)
-
-    def is_open(self):
-        """
-        :return: Weather the server is open or not
-        """
-        return self._control_socket is not None
-
-    def _create_server(self, address):
-        """
-        Creates the server
-        :param address: The UDS control filename
-        """
+    def _create_server(self, address: str) -> asyncio.coroutine:
         try:
             os.unlink(address)
         except OSError:
             if os.path.exists(address):
                 raise FileNotFoundError("Can't open UDS file")
 
-        self._control_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        self._control_socket.bind(address)
+        # self._control_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        # self._control_socket.bind(address)
+        async def foo(reader, writer):
+            await self._handle_new_client(reader, writer)
 
-    class ServerNotRunning(Exception):
-        """
-        Exceptions the occurs when operating on a closed server
-        """
+        return asyncio.start_unix_server(foo, path=address, loop=self._loop)
 
-    _control_socket = None
+    async def _handle_new_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        pid = None
+
+        try:
+            pid = await self._read_connection_message(reader)
+        except self.InvalidClientConnectionMessage:
+            log.warning("Received invalid message, someone is cheating!", exc_info=True)
+
+        log.info(f"Received a new valid connection message from pid {pid}")
+
+        await self._register_client_callback(pid)
+
+    async def _read_connection_message(self, reader: asyncio.StreamReader) -> int:
+        connection_message_size = 8
+        connection_message_opcode = 0x3001
+
+        opcode, pid = struct.unpack("II", await reader.read(connection_message_size))
+
+        if opcode != connection_message_opcode:
+            raise self.InvalidClientConnectionMessage
+
+        return pid
+
+    class InvalidClientConnectionMessage(Exception):
+        """
+        Invalid client connection messaged received
+        """

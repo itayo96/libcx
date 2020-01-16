@@ -1,8 +1,11 @@
 #!/usr/bin/python3
-from pathlib import Path
 import daemon_uds_server
 import logging
 import sys
+from logging import getLogger
+from pathlib import Path
+
+log = getLogger(__name__)
 
 daemon_folder = "~/.libcx/"
 daemon_main_uds_filename = str(Path(daemon_folder + "daemon.uds").expanduser())
@@ -15,11 +18,14 @@ def create_folder(path):
     Path(path).mkdir(parents=True, exist_ok=True)
 
 
+async def register_new_client(pid):
+    log.info("Registering a new client")
+
+
 def main():
     setup_logging()
     create_folder(daemon_folder)
-    server = daemon_uds_server.DaemonUDSServer(daemon_main_uds_filename, lambda a : a)
-    server.run()
+    server = daemon_uds_server.DaemonUDSServer(daemon_main_uds_filename, register_new_client)
 
 
 def setup_logging():
@@ -31,6 +37,7 @@ def setup_logging():
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     root.addHandler(handler)
+
 
 if __name__ == '__main__':
     main()
