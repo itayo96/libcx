@@ -11,24 +11,30 @@ daemon_folder = "~/.libcx/"
 daemon_main_uds_filename = str(Path(daemon_folder + "daemon.uds").expanduser())
 
 
-def create_folder(path):
+def create_folder(path: str) -> None:
     """
     :param path: The path of the folder to create
     """
     Path(path).mkdir(parents=True, exist_ok=True)
 
 
-async def register_new_client(pid):
+async def register_new_client(pid: int) -> object:
     log.info("Registering a new client")
+
+    return "Context"
+
+
+async def handle_libc_call(context: object, pid: int, code: int) -> None:
+    log.info(f"handle_libc_call")
 
 
 def main():
     setup_logging()
     create_folder(daemon_folder)
-    server = daemon_uds_server.DaemonUDSServer(daemon_main_uds_filename, register_new_client)
+    server = daemon_uds_server.DaemonUDSServer(daemon_main_uds_filename, register_new_client, handle_libc_call)
 
 
-def setup_logging():
+def setup_logging() -> None:
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
 

@@ -12,13 +12,13 @@ class DaemonUDSServer:
     logic.
     """
 
-    def __init__(self, address, register_client_callback):
+    def __init__(self, address, register_client_callback, handle_libc_call_callback):
         self._register_client_callback = register_client_callback
+        self._handle_libc_call_callback = handle_libc_call_callback
 
         self._loop = asyncio.get_event_loop()
-        server_coro = self._create_server(address)
-        server = self._loop.run_until_complete(server_coro)
 
+        server = self._loop.run_until_complete(self._create_server(address))
         self._loop.run_forever()
 
         server.close()
@@ -35,34 +35,67 @@ class DaemonUDSServer:
         # self._control_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         # self._control_socket.bind(address)
         async def foo(reader, writer):
-            await self._handle_new_client(reader, writer)
+            await self._handle_client(reader, writer)
 
         return asyncio.start_unix_server(foo, path=address, loop=self._loop)
 
-    async def _handle_new_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+    async def _handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         pid = None
+        context = None
 
         try:
-            pid = await self._read_connection_message(reader)
-        except self.InvalidClientConnectionMessage:
+            pid = (await self._get_connection(reader))[0]
+            log.info(f"Received a new valid connection message from pid {pid}")
+
+            context = await self._register_client_callback(pid)
+
+            while True:
+                pid, libc_call_code = await self._get_libc_call_report(reader)
+                log.info(f"Received a message containing a libc call {libc_call_code} from pid {pid}")
+
+                self._loop.create_task(self._handle_libc_call_callback(context, pid, libc_call_code))
+
+        except self.InvalidMessage:
             log.warning("Received invalid message, someone is cheating!", exc_info=True)
+        except ConnectionAbortedError:
+            log.info("Connection aborted from client")
 
-        log.info(f"Received a new valid connection message from pid {pid}")
-
-        await self._register_client_callback(pid)
-
-    async def _read_connection_message(self, reader: asyncio.StreamReader) -> int:
-        connection_message_size = 8
-        connection_message_opcode = 0x3001
-
-        opcode, pid = struct.unpack("II", await reader.read(connection_message_size))
-
-        if opcode != connection_message_opcode:
-            raise self.InvalidClientConnectionMessage
-
-        return pid
-
-    class InvalidClientConnectionMessage(Exception):
+    async def _get_connection(self, reader: asyncio.StreamReader) -> tuple:
         """
-        Invalid client connection messaged received
+        :param reader: The StreamReader to read from
+        :return: a tuple containing (pid)
         """
+        return await self._get_message(reader=reader, size=8, opcode=0x3001, message_format="I")
+
+    async def _get_libc_call_report(self, reader: asyncio.StreamReader) -> tuple:
+        """
+        :param reader: The StreamReader to read from
+        :return: a tuple containing (pid, libc_call_code)
+        """
+        return await self._get_message(reader=reader, size=12, opcode=0x1308, message_format="II")
+
+    async def _get_message(self, reader: asyncio.StreamReader, size: int, opcode: int, message_format: str) -> tuple:
+        data = await reader.read(size)
+
+        if len(data) == 0:
+            raise ConnectionAbortedError
+
+        if len(data) != size:
+            raise self.InvalidMessage()
+
+        msg_opcode = struct.unpack("I", data[:4])[0]
+        if msg_opcode != opcode:
+            raise self.InvalidMessage(msg_opcode)
+
+        return struct.unpack(message_format, data[4:])
+
+    class InvalidMessage(Exception):
+        """
+        Base class for all message related errors
+        """
+
+        def __init__(self):
+            self.message_opcode = 0
+
+        def __init__(self, message_opcode: int):
+            self.message_opcode = message_opcode

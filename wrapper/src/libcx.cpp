@@ -16,6 +16,13 @@ struct connection_msg
     uint32_t pid;
 };
 
+struct libc_call_report_msg
+{
+    uint32_t opcode;
+    uint32_t pid;
+    uint32_t code;
+};
+
 std::string home_relative_path(const std::string& path)
 {
     return std::string(getenv("HOME")) + path;
@@ -23,10 +30,12 @@ std::string home_relative_path(const std::string& path)
 
 static struct main
 {
+    int fd;
+
     main()
     {
         struct sockaddr_un addr;
-        int fd, size;
+        int size;
         auto path =  home_relative_path("/.libcx/daemon.uds");
         const char* sock_path = path.c_str();
         struct connection_msg msg;
@@ -67,6 +76,23 @@ static struct main
     handle_error:
         printf("exit libcx main\n");
     }
+
+    void report()
+    {
+        libc_call_report_msg msg;
+
+        msg.opcode = 0x1308;
+        msg.pid = static_cast<uint32_t>(getpid());
+        msg.code = 1;
+
+        int size = write(fd, (uint8_t*)&msg, sizeof(msg));
+        if (size != sizeof(msg))
+        {
+            printf("error sending connection message - %d\n", size);
+            return;
+        }
+    }
+
 } _;
 
 static void * (*real_calloc)(size_t, size_t);
@@ -78,6 +104,7 @@ void *calloc(size_t a, size_t b)
     c++;
 
     puts("calloc2\n");
+    _.report();
 
     return real_calloc(a, b);
 }
