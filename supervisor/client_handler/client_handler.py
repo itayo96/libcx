@@ -1,4 +1,5 @@
 from logging import getLogger
+from .research_logger import get_logger
 
 log = getLogger(__name__)
 
@@ -10,6 +11,7 @@ class ClientHandler:
 
     def __init__(self, init_pid):
         log.info(f"Hand`ling a new client (initial pid is {init_pid})")
+        get_logger("kaka").info("pipi")
 
     def libc_call_callback(self, pid: int, code: int) -> None:
         """

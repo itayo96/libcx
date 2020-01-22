@@ -5,6 +5,7 @@ import client_handler
 from server import daemon_uds_server
 from logging import getLogger
 from pathlib import Path
+from utils.logging import setup_logging
 
 log = getLogger(__name__)
 
@@ -25,17 +26,6 @@ def create_folder(path: str) -> None:
     :param path: The path of the folder to create
     """
     Path(path).mkdir(parents=True, exist_ok=True)
-
-
-def setup_logging() -> None:
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
-
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    root.addHandler(handler)
 
 
 if __name__ == '__main__':
