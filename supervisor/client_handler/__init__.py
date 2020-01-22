@@ -1,4 +1,4 @@
-from .client_handler import client_handler
+from .client_handler import ClientHandler
 
 
 class client_handler_wrapper:
@@ -7,7 +7,7 @@ class client_handler_wrapper:
     """
 
     def __init__(self, init_pid):
-        self._handler = client_handler(init_pid)
+        self._handler = ClientHandler(init_pid)
 
     def libc_call_callback(self, pid: int, code: int) -> None:
         """
@@ -16,7 +16,7 @@ class client_handler_wrapper:
         self._handler.libc_call_callback(pid, code)
 
 
-async def create(pid) -> client_handler_wrapper:
+def create(pid) -> client_handler_wrapper:
     """
     A quick snippet to create a new client_handler object
     :return: The client_handler object
@@ -24,7 +24,7 @@ async def create(pid) -> client_handler_wrapper:
     return client_handler_wrapper(pid)
 
 
-async def libc_call_callback(context: client_handler_wrapper, pid: int, code: int) -> None:
+def libc_call_callback(context: client_handler_wrapper, pid: int, code: int) -> None:
     """
     A quick snippet to create a new client_handler object
     :return: The client_handler object

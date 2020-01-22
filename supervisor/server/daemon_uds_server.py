@@ -5,6 +5,7 @@ import struct
 
 log = getLogger(__name__)
 
+
 class DaemonUDSServer:
     """
     An UDS based server for the agents to communicate with. This class handles the communication and not the actual
@@ -46,13 +47,13 @@ class DaemonUDSServer:
             pid = (await self._get_connection(reader))[0]
             log.info(f"Received a new valid connection message from pid {pid}")
 
-            context = await self._register_client_callback(pid)
+            context = self._register_client_callback(pid)
 
             while True:
                 pid, libc_call_code = await self._get_libc_call_report(reader)
                 log.info(f"Received a message containing a libc call {libc_call_code} from pid {pid}")
 
-                self._loop.create_task(self._handle_libc_call_callback(context, pid, libc_call_code))
+                self._handle_libc_call_callback(context, pid, libc_call_code)
 
         except self.InvalidMessage:
             log.warning("Received invalid message, someone is cheating!", exc_info=True)

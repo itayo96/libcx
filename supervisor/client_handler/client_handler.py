@@ -3,13 +3,13 @@ from logging import getLogger
 log = getLogger(__name__)
 
 
-class client_handler:
+class ClientHandler:
     """
     Represents an handler for an executable (consists of multiple pid's)
     """
 
     def __init__(self, init_pid):
-        log.info(f"Handling a new client (initial pid is {init_pid})")
+        log.info(f"Hand`ling a new client (initial pid is {init_pid})")
 
     def libc_call_callback(self, pid: int, code: int) -> None:
         """
