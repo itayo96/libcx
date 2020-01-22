@@ -44,50 +44,46 @@ class DaemonUDSServer:
         context = None
 
         try:
-            pid = (await self._get_connection(reader))[0]
-            log.info(f"Received a new valid connection message from pid {pid}")
+            libc_call_code, pid, payload = await self._get_libc_call_report(reader)
+            log.info(f"Received a message containing a libc call {libc_call_code} from pid {pid}")
 
             context = self._register_client_callback(pid)
 
             while True:
-                pid, libc_call_code = await self._get_libc_call_report(reader)
+                self._handle_libc_call_callback(context, pid, libc_call_code, payload)
+                libc_call_code, pid, payload = await self._get_libc_call_report(reader)
                 log.info(f"Received a message containing a libc call {libc_call_code} from pid {pid}")
-
-                self._handle_libc_call_callback(context, pid, libc_call_code)
 
         except self.InvalidMessage:
             log.warning("Received invalid message, someone is cheating!", exc_info=True)
         except ConnectionAbortedError:
             log.info("Connection aborted from client")
 
-    async def _get_connection(self, reader: asyncio.StreamReader) -> tuple:
-        """
-        :param reader: The StreamReader to read from
-        :return: a tuple containing (pid)
-        """
-        return await self._get_message(reader=reader, size=8, opcode=0x3001, message_format="I")
-
     async def _get_libc_call_report(self, reader: asyncio.StreamReader) -> tuple:
         """
         :param reader: The StreamReader to read from
-        :return: a tuple containing (pid, libc_call_code)
+        :return: a tuple containing (libc_call_code, pid, payload)
         """
-        return await self._get_message(reader=reader, size=12, opcode=0x1308, message_format="II")
+        size_field_size = 4
+        remaining_header_size = 8
+        entire_header_size = size_field_size + remaining_header_size
 
-    async def _get_message(self, reader: asyncio.StreamReader, size: int, opcode: int, message_format: str) -> tuple:
-        data = await reader.read(size)
+        size_stream = await reader.read(size_field_size)
 
-        if len(data) == 0:
+        if len(size_stream) < size_field_size:
+            raise ConnectionAbortedError(size_field_size, size_stream)
+
+        entire_message_size = struct.unpack("I", size_stream)[0]
+
+        if entire_message_size < entire_header_size:
             raise ConnectionAbortedError
 
-        if len(data) != size:
+        data = await reader.read(entire_message_size - size_field_size)
+
+        if len(data) != entire_message_size - size_field_size:
             raise self.InvalidMessage()
 
-        msg_opcode = struct.unpack("I", data[:4])[0]
-        if msg_opcode != opcode:
-            raise self.InvalidMessage(msg_opcode)
-
-        return struct.unpack(message_format, data[4:])
+        return struct.unpack("II", data[:remaining_header_size]) + (data[remaining_header_size:],)
 
     class InvalidMessage(Exception):
         """

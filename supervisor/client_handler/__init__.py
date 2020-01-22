@@ -1,32 +1,32 @@
 from .client_handler import ClientHandler
 
 
-class client_handler_wrapper:
+class ClientHandlerWrapper:
     """
     Represents an handler for an executable (consists of multiple pid's)
     """
 
-    def __init__(self, init_pid):
-        self._handler = ClientHandler(init_pid)
+    def __init__(self, *argc):
+        self._handler = ClientHandler(*argc)
 
-    def libc_call_callback(self, pid: int, code: int) -> None:
+    def libc_call_callback(self, *argc) -> None:
         """
         A callback function for the server to call to.
         """
-        self._handler.libc_call_callback(pid, code)
+        self._handler.libc_call_callback(*argc)
 
 
-def create(pid) -> client_handler_wrapper:
+def create(*argc) -> ClientHandlerWrapper:
     """
     A quick snippet to create a new client_handler object
     :return: The client_handler object
     """
-    return client_handler_wrapper(pid)
+    return ClientHandlerWrapper(*argc)
 
 
-def libc_call_callback(context: client_handler_wrapper, pid: int, code: int) -> None:
+def libc_call_callback(context: ClientHandlerWrapper, *argc) -> None:
     """
     A quick snippet to create a new client_handler object
     :return: The client_handler object
     """
-    context.libc_call_callback(pid, code)
+    context.libc_call_callback(*argc)

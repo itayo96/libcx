@@ -17,4 +17,6 @@ void main()
     printf("Omer2\n");
 
     sleep(1);
+
+    while(1);
 }

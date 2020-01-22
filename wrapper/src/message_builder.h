@@ -48,7 +48,10 @@ namespace message_builder
     template<class ...Params>
     size_t build_message(uint8_t *ptr, ELibCall lib_call, pid_t pid, Params ...params)
     {
-        return serialize(ptr, lib_call, pid, params...);
+        uint32_t params_length = serialize(ptr + sizeof(uint32_t), lib_call, pid, params...);
+        uint32_t entire_message_length = params_length + sizeof(uint32_t);
+        parse(ptr, entire_message_length);
+        return entire_message_length;
     }
 }
 
