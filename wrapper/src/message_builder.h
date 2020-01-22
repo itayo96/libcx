@@ -15,14 +15,14 @@ namespace message_builder
     };
 
     template<class Param>
-    size_t parse(uint8_t *ptr, Param param)
+    static size_t parse(uint8_t *ptr, Param param)
     {
         memcpy(ptr, &param, sizeof(Param));
         return sizeof(Param);
     }
 
     template<>
-    size_t parse<buffer>(uint8_t *ptr, buffer param)
+    inline size_t parse<buffer>(uint8_t *ptr, buffer param)
     {
         memcpy(ptr, &param.size, sizeof(param.size));
         memcpy(ptr + sizeof(param.size), &param.ptr, param.size);
@@ -31,13 +31,13 @@ namespace message_builder
 
 
     template<class Final>
-    size_t serialize(uint8_t *ptr, Final final)
+    static size_t serialize(uint8_t *ptr, Final final)
     {
         return parse(ptr, final);
     }
 
     template<class Current, class ...Next>
-    size_t serialize(uint8_t *ptr, Current current, Next ...next)
+    static size_t serialize(uint8_t *ptr, Current current, Next ...next)
     {
         size_t current_size = parse(ptr, current);
         size_t next_size = serialize<Next...>(ptr + current_size, next...);
@@ -46,7 +46,7 @@ namespace message_builder
     }
 
     template<class ...Params>
-    size_t build_message(uint8_t *ptr, ELibCall lib_call, pid_t pid, Params ...params)
+    static size_t build_message(uint8_t *ptr, ELibCall lib_call, pid_t pid, Params ...params)
     {
         uint32_t params_length = serialize(ptr + sizeof(uint32_t), lib_call, pid, params...);
         uint32_t entire_message_length = params_length + sizeof(uint32_t);
@@ -54,7 +54,5 @@ namespace message_builder
         return entire_message_length;
     }
 }
-
-
 
 #endif // ifndef MESSAGE_BUILDER_H
