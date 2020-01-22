@@ -10,6 +10,11 @@
 #include <sys/un.h>
 #include <stdlib.h>
 
+#include "message_builder.h"
+
+static constexpr size_t SUPERVISOR_BUFFER_SIZE = 2000;
+static uint8_t buff[SUPERVISOR_BUFFER_SIZE];
+
 struct connection_msg
 {
     uint32_t opcode;
@@ -29,27 +34,28 @@ std::string home_relative_path(const std::string& path)
 }
 
 static struct main
-{
+{    
     int fd;
+    pid_t pid;
 
     main()
     {
-        struct sockaddr_un addr;
-        int size;
-        auto path =  home_relative_path("/.libcx/daemon.uds");
-        const char* sock_path = path.c_str();
-        struct connection_msg msg;
-
+        pid = getpid();
 
         fd = socket(AF_UNIX, SOCK_STREAM, 0);
         if (fd == -1)
         {
             printf("error creating control socket - %d\n", errno);
-            goto handle_error;
+            return;
         }
 
+        struct sockaddr_un addr;
         memset(&addr, 0, sizeof(addr));
         addr.sun_family = AF_UNIX;
+
+        auto path = home_relative_path("/.libcx/daemon.uds");
+        const char* sock_path = path.c_str();
+        
         strncpy(addr.sun_path, sock_path, strlen(sock_path));
 
         printf("Connecting to %s\n", addr.sun_path);
@@ -57,54 +63,46 @@ static struct main
         if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
         {
             printf("error connecting control socket - %d\n", errno);
-            goto handle_error;
-        }
-
-        msg.opcode = 0x3001;
-        msg.pid = static_cast<uint32_t>(getpid());
-
-        size = write(fd, (uint8_t*)&msg, sizeof(msg));
-        if (size != sizeof(msg))
-        {
-            printf("error sending connection message - %d\n", size);
-            goto handle_error;
+            return;
         }
 
         // This code actually runs before programs main and even before its static constructors
-        printf("libcx main start pid = %d\n", static_cast<int>(getpid()));
-
-    handle_error:
-        printf("exit libcx main\n");
+        printf("libcx main start pid = %d\n", static_cast<int>(pid));
     }
 
-    void report()
+    void report(uint8_t *ptr, size_t size)
     {
-        libc_call_report_msg msg;
-
-        msg.opcode = 0x1308;
-        msg.pid = static_cast<uint32_t>(getpid());
-        msg.code = 1;
-
-        int size = write(fd, (uint8_t*)&msg, sizeof(msg));
-        if (size != sizeof(msg))
+        for (int i = 0; i < size; i++)
         {
-            printf("error sending connection message - %d\n", size);
+            printf("0x%02X, ", ptr[i]);
+        }
+        printf("\n");
+
+        int actual_size = write(fd, ptr, size);
+        if (actual_size != size)
+        {
+            printf("error sending connection message - %d\n", actual_size);
             return;
         }
     }
-
 } _;
 
 static void * (*real_calloc)(size_t, size_t);
 int c = 0;
 
-void *calloc(size_t a, size_t b)
+void *calloc(size_t nmemb, size_t size)
 {
     real_calloc = (decltype(real_calloc))dlsym(RTLD_NEXT, "calloc");
     c++;
 
     puts("calloc2\n");
-    _.report();
 
-    return real_calloc(a, b);
+    void *return_value = real_calloc(nmemb, size);
+
+    size_t msg_length = message_builder::build_message(
+        buff, ELibCall::calloc, _.pid, nmemb, size, return_value);
+
+    _.report(buff, msg_length);
+
+    return return_value;
 }
