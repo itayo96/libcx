@@ -6,4 +6,4 @@ then
     mkdir bin
 fi
 
-g++ src/libcx.cpp src/heap_management.cpp -fPIC -shared -o bin/libcx.so -ldl
+g++ src/libcx.cpp src/heap_management.cpp -std=c++11 -fPIC -shared -o bin/libcx.so -ldl

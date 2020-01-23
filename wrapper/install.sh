@@ -1,3 +1,3 @@
 #!/bin/bash
 
-cp bin/libcx.so ../test/env
+cp bin/libcx.so ../test/env/libcx.so
