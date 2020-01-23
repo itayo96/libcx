@@ -24,18 +24,17 @@ struct initializer
     {
         size_t message_size = message_builder::build_message(buffer, lib_call, pid, params...);
 
-	for (int i = 0; i < message_size; i++)
+        for (int i = 0; i < message_size; i++)
             printf("0x%02X, ", buffer[i]);
-	printf("\r\n");
+        printf("\r\n");
 
-	size_t actual_size = write_to_supervisor(message_size);
+        size_t actual_size = write_to_supervisor(message_size);
 
         if (actual_size != message_size)
         {
             printf("error sending connection message - %u\n", actual_size);
         }
     }
-
 };
 
 extern initializer libcx;
