@@ -50,17 +50,15 @@ initializer::initializer()
     printf("libcx main start pid = %d\n", static_cast<int>(pid));
 }
 
-void initializer::report(size_t message_size)
+size_t initializer::write_to_supervisor(size_t size)
 {
-    for (int i = 0; i < message_size; i++)
-    {
-        printf("0x%02X, ", buffer[i]);
-    }
-    printf("\n");
+    int written = write(fd, buffer, size);
 
-    int actual_size = write(fd, buffer, message_size);
-    if (actual_size != message_size)
+    if (written <= 0)
     {
-        printf("error sending connection message - %d\n", actual_size);
+        return 0;
     }
+
+    return size_t(written);
 }
+

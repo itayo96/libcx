@@ -21,10 +21,7 @@ extern "C" void *calloc(size_t nmemb, size_t size)
 
     void *return_value = real_calloc(nmemb, size);
 
-     size_t msg_length = message_builder::build_message(
-         libcx.buffer, ELibCall::calloc, libcx.pid, nmemb, size, return_value);
-
-    libcx.report(msg_length);
+    libcx.report(ELibCall::calloc, nmemb, size, return_value);
 
     return return_value;
 }
