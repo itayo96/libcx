@@ -2,5 +2,8 @@
 
 enum class ELibCall : uint32_t
 {
-    calloc
+    calloc,
+    malloc,
+    free,
+    memset
 };
