@@ -15,6 +15,7 @@ if [ $? -eq 0 ]; then
     echo "${GREEN} Successfully generated makefile for client ${NC}"
 else 
     echo "${RED} Failed to generate makefile for client ${NC}"
+    exit
 fi 
 
 echo "${YELLOW} > Building SFTP client ... ${NC}"
@@ -23,6 +24,7 @@ if [ $? -eq 0 ]; then
     echo "${GREEN} Successfully built SFTP client ${NC}"
 else 
     echo "${RED} Failed to build SFTP client ${NC}"
+    exit
 fi
 
 echo "${YELLOW} > Installing SFTP client ... ${NC}"
@@ -37,6 +39,7 @@ if [ $? -eq 0 ]; then
     echo "${GREEN} Successfully generated makefile for server ${NC}"
 else 
     echo "${RED} Failed to generate makefile for server ${NC}"
+    exit
 fi 
 
 echo "${YELLOW} > Building SFTP server ... ${NC}"
@@ -45,6 +48,7 @@ if [ $? -eq 0 ]; then
     echo "${GREEN} Successfully built SFTP server ${NC}"
 else 
     echo "${RED} Failed to build SFTP server ${NC}"
+    exit
 fi
 
 echo "${YELLOW} > Installing SFTP server ... ${NC}"
