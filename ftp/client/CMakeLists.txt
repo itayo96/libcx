@@ -7,4 +7,4 @@ include_directories(shared)
 
 file(GLOB SOURCES src/*.cpp)
 
-add_executable(client ${SOURCES})
+add_executable(ftp-client ${SOURCES})

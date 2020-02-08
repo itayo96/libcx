@@ -40,5 +40,16 @@ int main(int argc, char *argv[])
     }
     
     cout << config.root_dir;
+
+    Server server;
+
+    if (!server.setup(config))
+    {
+        cout << "Failed to setup server\n";
+        return 1;
+    }
+
+    server.run();
+
     return 0;
 }

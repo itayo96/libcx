@@ -28,7 +28,7 @@ else
 fi
 
 echo "${YELLOW} > Installing SFTP client ... ${NC}"
-cp client ../../build
+cp ftp-client ../../build
 
 # build and install the server
 cd ../../server/build
@@ -52,6 +52,6 @@ else
 fi
 
 echo "${YELLOW} > Installing SFTP server ... ${NC}"
-cp server ../../build
+cp ftp-server ../../build
 
 echo "${GREEN} > Done! ${NC}"
