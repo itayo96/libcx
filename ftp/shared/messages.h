@@ -1,6 +1,8 @@
 #ifndef MESSAGES_H
 #define MESSAGES_H
 
+#include <sys/types.h>
+#include <unistd.h>
 #include "shared_config.h"
 
 enum class EOpcodes
@@ -48,7 +50,8 @@ struct Header
     size_t size;
     int client_id;
 
-    Header(EOpcodes opcode) : opcode(opcode) {}
+    Header(EOpcodes opcode, size_t size, pid_t client_id) : 
+        opcode(opcode), size(size), client_id((int)client_id) {}
 };
 
 
@@ -57,7 +60,7 @@ struct ProtocolStartRequest
     Header header;
     EProtocolType type;
 
-    ProtocolStartRequest() : header(EOpcodes::ProtocolStartRequest) {}
+    ProtocolStartRequest() : header(EOpcodes::ProtocolStartRequest, sizeof(ProtocolStartRequest), getpid()) {}
 };
 
 struct ProtocolStartResponse
@@ -65,7 +68,7 @@ struct ProtocolStartResponse
     Header header;
     EProtocolPermission permission;
 
-    ProtocolStartResponse() : header(EOpcodes::ProtocolStartResponse) {}
+    ProtocolStartResponse() : header(EOpcodes::ProtocolStartResponse, sizeof(ProtocolStartResponse), getpid()) {}
 };
 
 struct ProtocolEnd
@@ -73,7 +76,7 @@ struct ProtocolEnd
     Header header;
     EProtocolStatus status;
 
-    ProtocolEnd() : header(EOpcodes::ProtocolEnd) {}
+    ProtocolEnd() : header(EOpcodes::ProtocolEnd, sizeof(ProtocolEnd), getpid()) {}
 };
 
 struct PutRequest
@@ -83,7 +86,7 @@ struct PutRequest
     char file_path[MAX_PATH_LEN];
     size_t file_size;
 
-    PutRequest() : header(EOpcodes::PutRequest) {}
+    PutRequest() : header(EOpcodes::PutRequest, sizeof(PutRequest), getpid()) {}
 };
 
 struct PutResponse
@@ -91,7 +94,7 @@ struct PutResponse
     Header header;
     EProtocolStatus status;
 
-    PutResponse() : header(EOpcodes::PutResponse) {}
+    PutResponse() : header(EOpcodes::PutResponse, sizeof(PutResponse), getpid()) {}
 };
 
 struct GetRequest
@@ -99,7 +102,7 @@ struct GetRequest
     Header header;
     char file_path[MAX_PATH_LEN];
 
-    GetRequest() : header(EOpcodes::GetRequest) {}
+    GetRequest() : header(EOpcodes::GetRequest, sizeof(GetRequest), getpid()) {}
 };
 
 struct GetResponse
@@ -108,7 +111,7 @@ struct GetResponse
     EProtocolStatus status;
     size_t file_size;
 
-    GetResponse() : header(EOpcodes::GetResponse) {}
+    GetResponse() : header(EOpcodes::GetResponse, sizeof(GetResponse), getpid()) {}
 };
 
 struct DataFragment
@@ -117,7 +120,7 @@ struct DataFragment
     size_t payload_len;
     uint8_t payload[FRAGMENT_SIZE];
 
-    DataFragment() : header(EOpcodes::DataFragment) {}
+    DataFragment() : header(EOpcodes::DataFragment, sizeof(DataFragment), getpid()) {}
 };
 
 struct DataFragmentAck
@@ -125,14 +128,16 @@ struct DataFragmentAck
     Header header;
     EProtocolStatus status;
 
-    DataFragmentAck() : header(EOpcodes::DataFragmentAck) {}
+    DataFragmentAck() : header(EOpcodes::DataFragmentAck, sizeof(DataFragmentAck), getpid()) {}
 };
 
 struct Disconnect
 {
     Header header;
 
-    Disconnect() : header(EOpcodes::Disconnect) {}
+    Disconnect() : header(EOpcodes::Disconnect, sizeof(Disconnect), getpid()) {}
 };
+
+static constexpr size_t MAX_MSG_SIZE = sizeof(DataFragment);
 
 #endif // MESSAGES_H

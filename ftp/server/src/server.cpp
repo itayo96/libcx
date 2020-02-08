@@ -51,15 +51,15 @@ void Server::run()
 
     while (1)
     {
-        Connection * conn = (Connection *)malloc(sizeof(Connection));
-        int len = sizeof(conn->client_addr);
+        Connection conn;
+        int len = sizeof(conn.client_addr);
 
         // wait for a new client to connect
-        conn->client_fd = accept(_socket, (struct sockaddr *)&conn->client_addr, (socklen_t *)&len);
+        conn.client_fd = accept(_socket, (struct sockaddr *)&conn.client_addr, (socklen_t *)&len);
         
-        if (conn->client_fd < 0)
+        if (conn.client_fd < 0)
         {
-            cout << "[Server::run] Failed to accept connection, errno " << conn->client_fd << "\n";
+            cout << "[Server::run] Failed to accept connection, errno " << conn.client_fd << "\n";
             continue;
         }
 
@@ -67,7 +67,7 @@ void Server::run()
 
         // create a thread to handle this session
         pthread_t thread;
-        pthread_create(&thread, nullptr, Server::handle_connection, conn);
+        pthread_create(&thread, nullptr, Server::handle_connection, reinterpret_cast<void *>(&conn));
     }
 }
 
