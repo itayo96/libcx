@@ -6,21 +6,26 @@
 #include <netinet/in.h>
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 #include "messages.h"
+#include "server_config.h"
 
 using namespace std;
 
 enum class EGetStates
 {
     WaitForGetRequest,
+    SendData,
     WaitForDataAck,
     WaitForDisconnect,
+    FileNotFound,
     Finish,
 };
 
 enum class EPutStates
 {
     WaitForData,
+    SendDataAck,
     WaitForDisconnect,
     Finish,
 };
@@ -28,8 +33,7 @@ enum class EPutStates
 class Session
 {
 public:
-    Session(const sockaddr_in & client_addr, const int & client_fd) : 
-        _client_addr(client_addr), _client_socket(client_fd) {}
+    Session(const sockaddr_in & client_addr, const int & client_fd);
 
     ~Session() {}
 

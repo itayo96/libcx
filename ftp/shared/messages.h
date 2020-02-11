@@ -34,7 +34,8 @@ enum class EProtocolPermission
 enum class EProtocolStatus
 {
     Success,
-    Error,
+    GeneralError,
+    FileNotFoundError,
 };
 
 enum class EPutType

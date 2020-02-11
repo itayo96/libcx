@@ -1,5 +1,16 @@
 #include "session.h"
 
+Session::Session(const sockaddr_in & client_addr, const int & client_fd) :
+    _client_addr(client_addr), _client_socket(client_fd)
+{
+    // set deafult timeout on client socket
+    int ret = setsockopt(_client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&TIMEOUT, sizeof(TIMEOUT));
+    if (ret != 0)
+    {
+        cout << "[Session] Error setting timeout\n";
+    }
+}
+
 bool Session::start()
 {
     // wait for protocol start message
@@ -47,6 +58,162 @@ bool Session::start()
 
 bool Session::get()
 {
+    ifstream file;
+    EGetStates state = EGetStates::WaitForGetRequest;
+    ssize_t len;
+    bool finished_sending = false;
+
+    while (state != EGetStates::Finish)
+    {
+        switch (state)
+        {
+            case EGetStates::WaitForGetRequest:
+            {
+                GetRequest request;
+
+                len = read(_client_socket, reinterpret_cast<void *>(&request), sizeof(request));
+                if (len < 0)
+                {
+                    cout << "[Session::get] Error reading get request - " << len << "\n";
+                    return false;
+                }
+                
+                if (len != sizeof(GetRequest) || request.header.opcode != EOpcodes::GetRequest
+                    || request.header.size != sizeof(GetRequest))
+                {
+                    cout << "[Session::get] Invalid get request\n";
+                    return false;
+                }
+
+                cout << "[Session::get] Got get request\n";
+                std::string file_path(request.file_path);
+                std::string full_path = ROOT_DIR + file_path;
+
+                // open requested file for reading
+                file.open(full_path, ios_base::binary);
+                if (!file.good())
+                {
+                    cout << "[Session::get] File not found\n";
+                    state = EGetStates::FileNotFound;
+                    break;
+                }
+
+                state = EGetStates::SendData;
+                break;
+            }
+
+            case EGetStates::SendData:
+            {
+                DataFragment fragment;
+
+                if (!file.is_open())
+                {
+                    cout << "[Session::get] File not open for reading\n";
+                    return false;
+                }
+
+                file.read((char*)fragment.payload, FRAGMENT_SIZE);
+                fragment.payload_len = file ? FRAGMENT_SIZE : (size_t)file.gcount();
+
+                len = send(_client_socket, &fragment, sizeof(DataFragment), 0);
+                if (len < 0)
+                {
+                    cout << "[Session::get] Error sending data fragment - " << len << "\n";
+                    file.close();
+                    return false;
+                }
+
+                cout << "[Session::get] Sent data fragment\n";
+                finished_sending = file ? false : true;
+                state = EGetStates::WaitForDataAck;
+                break;
+            }
+
+            case EGetStates::WaitForDataAck:
+            {
+                DataFragmentAck ack;
+
+                len = read(_client_socket, reinterpret_cast<void *>(&ack), sizeof(ack));
+                if (len < 0)
+                {
+                    cout << "[Session::get] Error reading data fragment ack - " << len << "\n";
+                    file.close();
+                    return false;
+                }
+                
+                if (len != sizeof(DataFragmentAck) || ack.header.opcode != EOpcodes::DataFragmentAck
+                    || ack.header.size != sizeof(DataFragmentAck))
+                {
+                    cout << "[Session::get] Invalid data fragment ack\n";
+                    file.close();
+                    return false;
+                }
+
+                if (ack.status == EProtocolStatus::Success)
+                {
+                    cout << "[Session::get] Got data fragment ack\n";
+                    state = finished_sending ? EGetStates::WaitForDisconnect : EGetStates::SendData;
+                }
+                else
+                {
+                    cout << "[Session::get] Fragment ack bad status - " << (int)ack.status << "\n";
+                    state = EGetStates::Finish;
+                }
+                
+                break;
+            }
+
+            case EGetStates::FileNotFound:
+            {
+                GetResponse response;
+                response.status = EProtocolStatus::FileNotFoundError;
+                response.file_size = 0;
+
+                len = send(_client_socket, &response, sizeof(GetResponse), 0);
+                if (len < 0)
+                {
+                    cout << "[Session::get] Error sending file not found - " << len << "\n";
+                    return false;
+                }
+
+                state = EGetStates::Finish;
+                break;
+            }
+
+            case EGetStates::WaitForDisconnect:
+            {
+                Disconnect disconnect;
+
+                len = read(_client_socket, reinterpret_cast<void *>(&disconnect), sizeof(disconnect));
+                if (len < 0)
+                {
+                    cout << "[Session::get] Error reading disconnect message - " << len << "\n";
+                    file.close();
+                    return false;
+                }
+                
+                if (len != sizeof(Disconnect) || disconnect.header.opcode != EOpcodes::Disconnect
+                    || disconnect.header.size != sizeof(Disconnect))
+                {
+                    cout << "[Session::get] Invalid disconnect message\n";
+                    file.close();
+                    return false;
+                }
+
+                cout << "[Session::get] Got disconnect message\n";
+                state = EGetStates::Finish;
+                break;
+            }
+        
+            default:
+            {
+                cout << "[Session::get] Invalid state reached\n";
+                return false;
+            }
+        }
+    }
+
+    file.close();
     return true;
 }
 
@@ -72,7 +239,7 @@ bool Session::send_protocol_start_response()
     response.permission = EProtocolPermission::Allowed; // can add blacklist check if you want
 
     // send response
-    ssize_t len = write(_client_socket, reinterpret_cast<char *>(&response), sizeof(response));
+    ssize_t len = write(_client_socket, reinterpret_cast<char*>(&response), sizeof(response));
 
     if (len != sizeof(response))
     {
