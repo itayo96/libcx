@@ -87,4 +87,6 @@ void * Server::handle_connection(void * connection)
     {
         cout << "[Server::handle_connection] Error handling session, thread " << pthread_self() << "\n";
     }
+
+    return nullptr; // returning nullptr to clear a compilation warning
 }

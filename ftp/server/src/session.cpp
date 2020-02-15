@@ -86,8 +86,7 @@ bool Session::get()
                 }
 
                 cout << "[Session::get] Got get request\n";
-                std::string file_path(request.file_path);
-                std::string full_path = ROOT_DIR + file_path;
+                std::string full_path = get_full_path(request.file_path);
 
                 // open requested file for reading
                 file.open(full_path, ios_base::binary);
@@ -219,15 +218,177 @@ bool Session::get()
 
 bool Session::put()
 {
-    return true;
+    PutRequest request;
+
+    // read put request message
+    ssize_t len = read(_client_socket, reinterpret_cast<void *>(&request), sizeof(request));
+    if (len < 0)
+    {
+        cout << "[Session::put] Error reading put request - " << len << "\n";
+        return false;
+    }
+    
+    if (len != sizeof(PutRequest) || request.header.opcode != EOpcodes::PutRequest
+        || request.header.size != sizeof(PutRequest))
+    {
+        cout << "[Session::put] Invalid put request\n";
+        return false;
+    }
+
+    cout << "[Session::put] Got put request\n";
+    std::string file_path(request.file_path);
+    std::string full_path = ROOT_DIR + file_path;
+
+    // check the put type and forward to correct function
+    switch (request.put_type)
+    {
+        case (EPutType::Fragments):
+            return put_fragments(request);
+
+        case (EPutType::SingleBlock):
+            return put_single_block(request);
+
+        default:
+            cout << "[Session::put] Invalid put type\n";
+            return false;
+    }
 }
 
-bool Session::put_fragments()
+bool Session::put_fragments(PutRequest & request)
 {
+    ssize_t len;
+    std::string full_path = get_full_path(request.file_path);
+
+    // open file for writing (if exists we override the existing data in the file)
+    ofstream file(full_path, ios::binary | ios::trunc);
+    if (!file.good())
+    {
+        cout << "[Session::put_fragments] Error opening file\n";
+        return false;
+    }
+
+    // send put response to start receiving data
+    PutResponse response;
+    response.status = EProtocolStatus::Success;
+    len = send(_client_socket, &response, sizeof(PutResponse), 0);
+    if (len < 0)
+    {
+        cout << "[Session::put_fragments] Error sending put response - " << len << "\n";
+        return false;
+    }
+
+    EPutStates state = EPutStates::WaitForData;
+    size_t received_data = 0;
+
+    while (state != EPutStates::Finish)
+    {
+        switch (state)
+        {
+            case (EPutStates::WaitForData):
+            {
+                // read data fragment
+                DataFragment fragment;
+                len = read(_client_socket, reinterpret_cast<void *>(&fragment), sizeof(fragment));
+
+                if (len < 0)
+                {
+                    cout << "[Session::put_fragments] Error reading data fragment - " << len << "\n";
+                    file.close();
+                    return false;
+                }
+
+                if (fragment.header.opcode != EOpcodes::DataFragment || len != sizeof(fragment) ||
+                    fragment.header.size != sizeof(fragment) || fragment.payload_len > FRAGMENT_SIZE)
+                {
+                    cout << "[Session::put_fragments] Invalid data fragment\n";
+                    file.close();
+                    return false;
+                }
+
+                if (fragment.payload_len + received_data > request.file_size)
+                {
+                    cout << "[Session::put_fragments] Too much data received\n";
+                    file.close();
+                    return false;
+                }
+
+                cout << "[Session::put_fragments] Got data fragment\n";
+
+                // write data to file
+                file.write(reinterpret_cast<char *>(fragment.payload), fragment.payload_len);
+                received_data += fragment.payload_len;
+
+                state = EPutStates::SendDataAck;
+                break;
+            }
+
+            case (EPutStates::SendDataAck):
+            {
+                DataFragmentAck ack;
+                ack.status = EProtocolStatus::Success;
+
+                len = send(_client_socket, &ack, sizeof(ack), 0);
+                if (len < 0)
+                {
+                    cout << "[Session::put_fragments] Error sending data fragment ack - " << len << "\n";
+                    file.close();
+                    return false;
+                }
+
+                cout << "[Session::put_fragments] Sent data fragment ack\n";
+
+                if (received_data == request.file_size)
+                {
+                    state = EPutStates::WaitForDisconnect;
+                }
+                else
+                {
+                    state = EPutStates::WaitForData;
+                }
+
+                break;
+            }
+
+            case (EPutStates::WaitForDisconnect):
+            {
+                // read disconnect message
+                Disconnect disconnect;
+                len = read(_client_socket, reinterpret_cast<void *>(&disconnect), sizeof(disconnect));
+
+                if (len < 0)
+                {
+                    cout << "[Session::put_fragments] Error reading disconnect message - " << len << "\n";
+                    file.close();
+                    return false;
+                }
+
+                if (disconnect.header.opcode != EOpcodes::Disconnect || len != sizeof(disconnect) ||
+                    disconnect.header.size != sizeof(disconnect))
+                {
+                    cout << "[Session::put_fragments] Invalid disconnect message\n";
+                    file.close();
+                    return false;
+                }
+
+                cout << "[Session::put_fragments] Got disconnect\n";
+
+                state = EPutStates::Finish;
+                break;
+            }
+
+            default:
+            {
+                cout << "[Session::put_fragments] Invalid state reached\n";
+                return false;
+            }
+        }
+    }
+
+    file.close();
     return true;
 }
 
-bool Session::put_single_block()
+bool Session::put_single_block(PutRequest & request)
 {
     return true;
 }

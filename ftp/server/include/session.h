@@ -44,6 +44,16 @@ public:
 
 private:
     /**
+     * concate relative path from the server to the full path in the os
+     */
+    inline std::string get_full_path(char * relative_path)
+    {
+        std::string file_path(relative_path);
+        std::string full_path = ROOT_DIR + file_path;
+        return full_path;
+    }
+
+    /**
      * get file from server
      */
     bool get();
@@ -56,12 +66,12 @@ private:
     /**
      * put file server (fragment by fragment)
      */
-    bool put_fragments();
+    bool put_fragments(PutRequest & request);
 
     /**
      * put file server (single block)
      */
-    bool put_single_block();
+    bool put_single_block(PutRequest & request);
 
     /**
      * send a protocol start response message to the client
