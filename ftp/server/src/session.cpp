@@ -390,6 +390,168 @@ bool Session::put_fragments(PutRequest & request)
 
 bool Session::put_single_block(PutRequest & request)
 {
+    ssize_t len;
+    std::string full_path = get_full_path(request.file_path);
+
+    if (request.file_size > MAX_FILE_SIZE)
+    {
+        cout << "[Session::put_single_block] File too big, try sending by fragments\n";
+        return false;
+    }
+
+    char * data = (char *)calloc(request.file_size, sizeof(char));
+    if (data == nullptr)
+    {
+        cout << "[Session::put_single_block] Error allocating memory\n";
+        return false;
+    }
+
+    // open file for writing (if exists we override the existing data in the file)
+    ofstream file(full_path, ios::binary | ios::trunc);
+    if (!file.good())
+    {
+        cout << "[Session::put_single_block] Error opening file\n";
+        return false;
+    }
+
+    // send put response to start receiving data
+    PutResponse response;
+    response.status = EProtocolStatus::Success;
+    len = send(_client_socket, &response, sizeof(PutResponse), 0);
+    if (len < 0)
+    {
+        cout << "[Session::put_single_block] Error sending put response - " << len << "\n";
+        return false;
+    }
+
+    size_t received_data = 0;
+    EPutStates state = EPutStates::WaitForData;
+
+    while (state != EPutStates::Finish)
+    {
+        switch (state)
+        {
+            case (EPutStates::WaitForData):
+            {
+                // read data fragment
+                DataFragment fragment;
+                len = read(_client_socket, reinterpret_cast<void *>(&fragment), sizeof(fragment));
+
+                if (len < 0)
+                {
+                    cout << "[Session::put_single_block] Error reading data fragment - " << len << "\n";
+                    free(data);
+                    file.close();
+                    return false;
+                }
+
+                if (fragment.header.opcode != EOpcodes::DataFragment || len != sizeof(fragment) ||
+                    fragment.header.size != sizeof(fragment) || fragment.payload_len > FRAGMENT_SIZE)
+                {
+                    cout << "[Session::put_single_block] Invalid data fragment\n";
+                    free(data);
+                    file.close();
+                    return false;
+                }
+
+                if (fragment.payload_len + received_data > request.file_size)
+                {
+                    cout << "[Session::put_single_block] Too much data received\n";
+                    free(data);
+                    file.close();
+                    return false;
+                }
+
+                cout << "[Session::put_single_block] Got data fragment\n";
+
+                // copy payload to data buffer
+                memcpy(data + received_data, reinterpret_cast<char *>(fragment.payload), fragment.payload_len);
+                received_data += fragment.payload_len;
+
+                state = EPutStates::SendDataAck;
+                break;
+            }
+
+            case (EPutStates::SendDataAck):
+            {
+                DataFragmentAck ack;
+                ack.status = EProtocolStatus::Success;
+
+                len = send(_client_socket, &ack, sizeof(ack), 0);
+                if (len < 0)
+                {
+                    cout << "[Session::put_single_block] Error sending data fragment ack - " << len << "\n";
+                    free(data);
+                    file.close();
+                    return false;
+                }
+
+                cout << "[Session::put_single_block] Sent data fragment ack\n";
+
+                if (received_data == request.file_size)
+                {
+                    state = EPutStates::Dump;
+                }
+                else
+                {
+                    state = EPutStates::WaitForData;
+                }
+
+                break;
+            }
+
+            case (EPutStates::Dump):
+            {
+                // write the data we accumilated to the file
+                file.write(data, received_data);
+
+                // dalete the data buffer
+                free(data);
+
+                state = EPutStates::WaitForDisconnect;
+                break;
+            }
+
+            case (EPutStates::WaitForDisconnect):
+            {
+                // read disconnect message
+                Disconnect disconnect;
+                len = read(_client_socket, reinterpret_cast<void *>(&disconnect), sizeof(disconnect));
+
+                if (len < 0)
+                {
+                    cout << "[Session::put_single_block] Error reading disconnect message - " << len << "\n";
+                    free(data);
+                    file.close();
+                    return false;
+                }
+
+                if (disconnect.header.opcode != EOpcodes::Disconnect || len != sizeof(disconnect) ||
+                    disconnect.header.size != sizeof(disconnect))
+                {
+                    cout << "[Session::put_single_block] Invalid disconnect message\n";
+                    free(data);
+                    file.close();
+                    return false;
+                }
+
+                cout << "[Session::put_single_block] Got disconnect\n";
+
+                state = EPutStates::Finish;
+                break;
+            }
+
+            default:
+            {
+                cout << "[Session::put_single_block] Invalid state reached\n";
+                free(data);
+                return false;
+            }
+        }
+    }
+    
+    file.close();
+    free(data);
     return true;
 }
 

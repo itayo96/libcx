@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <cstring>
 #include "messages.h"
 #include "server_config.h"
 
@@ -26,6 +27,7 @@ enum class EPutStates
 {
     WaitForData,
     SendDataAck,
+    Dump,
     WaitForDisconnect,
     Finish,
 };

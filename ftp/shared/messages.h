@@ -16,6 +16,7 @@ enum class EOpcodes
     GetResponse,
     DataFragment,
     DataFragmentAck,
+    Dump,
     Disconnect,
 };
 
