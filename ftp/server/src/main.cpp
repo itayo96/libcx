@@ -7,15 +7,14 @@ using namespace std;
 
 void print_usage()
 {
-    // TODO
-    cout << "usage is\n";
+    cout << "usage: ftp-server --root=server_root_directory \n";
 }
 
 int main(int argc, char *argv[])
 {
     if (argc < 2)
     {
-        cout << "Too few arguments\n";
+        cout << "Too few arguments, type ftp-server -h|--help|--usage for usage\n";
         return 1;
     }
 
