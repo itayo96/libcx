@@ -103,6 +103,6 @@ int main(int argc, char *argv[])
         cout << "Command not supported, type ftp-client -h|--help|--usage for usage\n";
         return 1;
     }
-    
+
     return 0;
 }
