@@ -8,7 +8,7 @@ void print_usage()
 {
     cout << "usage: ftp-client get --src=source_file_on_server [--dest=destination_directory]\n";
     cout << "usage: ftp-client put --type=fragments|block --src=source_file [--dest=destination_directory_on_server]\n";
-    cout << "usage: ftp-client attack --type=double_free|password\n";
+    cout << "usage: ftp-client attack --type=double-free|password\n";
 }
 
 int main(int argc, char *argv[])
@@ -61,11 +61,42 @@ int main(int argc, char *argv[])
     }
     else if (command.compare("get") == 0)
     {
-        // get
+        if (!cmdl("--src"))
+        {
+            cout << "Missing arguments (Get), type ftp-client --help for usage\n";
+            return 1;
+        }
+
+        config.command = ECommandType::Get;
+        cmdl("src") >> config.src_file;
+        cmdl("dest", "") >> config.dest_dir;
+
+        // RUN CLIENT
     }
     else if (command.compare("attack") == 0)
     {
-        // attack
+        if (!cmdl("--type"))
+        {
+            cout << "Missing arguments (Attack), type ftp-client --help for usage\n";
+            return 1;
+        }
+
+        string type;
+        cmdl("type") >> type;
+        if (type.compare("password") == 0)
+        {
+            config.command = ECommandType::AttackGetPassword;
+        }
+        else if (type.compare("double-free") == 0)
+        {
+            config.command = ECommandType::AttackDoubleFree;
+        }
+        else
+        {
+            cout << "Attack type not supported, type ftp-client --help for usage\n";
+        }
+
+        // RUN CLIENT
     }
     else
     {
