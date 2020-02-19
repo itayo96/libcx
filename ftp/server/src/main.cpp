@@ -37,8 +37,6 @@ int main(int argc, char *argv[])
         cout << "You must provide a root directory\n";
         return 1;
     }
-    
-    cout << config.root_dir;
 
     Server server;
 

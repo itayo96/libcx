@@ -36,8 +36,7 @@ enum class EPutStates
 class Session
 {
 public:
-    Session(const sockaddr_in & client_addr, const int & client_fd);
-
+    Session(const sockaddr_in & client_addr, const int & client_fd, const string & root_dir);
     ~Session() {}
 
     /**
@@ -52,7 +51,7 @@ private:
     inline std::string get_full_path(char * relative_path)
     {
         std::string file_path(relative_path);
-        std::string full_path = ROOT_DIR + file_path;
+        std::string full_path = _root_dir + file_path;
         return full_path;
     }
 
@@ -85,6 +84,7 @@ private:
     sockaddr_in _client_addr;
     int _client_socket;
     int _client_id;
+    string _root_dir;
 };
 
 #endif // SESSION_H

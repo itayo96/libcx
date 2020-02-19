@@ -87,7 +87,7 @@ bool Client::execute(const client_command & command)
 bool Client::get(const string & src_file, const string & dest_dir)
 {
     ssize_t len;
-
+cout << "DEBUG GET dest dir :    " << dest_dir << endl;
     // send protocol start request
     ProtocolStartRequest start_request;
     start_request.type = EProtocolType::Get;
@@ -159,7 +159,7 @@ bool Client::get(const string & src_file, const string & dest_dir)
     }
 
     // open file for writing (if exists we override the existing data in the file)
-    string full_path = dest_dir + dest_dir.back() == "/" ? "" : "/" + file_name_from_path(src_file);
+    string full_path = dest_dir + (dest_dir.back() == '/' ? "" : "/") + file_name_from_path(src_file);
     ofstream file(full_path, ios::binary | ios::trunc);
     if (!file.good())
     {
@@ -305,9 +305,12 @@ bool Client::put(const string & src_file, const string & dest_dir, EPutType type
 
     // send put request
     PutRequest put_request;
-    string server_file_path = dest_dir + dest_dir.back() == "/" ? "" : "/" + file_name_from_path(src_file);
+
+    string server_file_path = dest_dir + (dest_dir.back() == '/' ? "" : "/") + file_name_from_path(src_file);
     strcpy(put_request.file_path, server_file_path.c_str());
-    put_request.file_size = filesize(src_file);
+
+    size_t file_size = filesize(src_file);
+    put_request.file_size = file_size;
     put_request.put_type = type;
 
     len = send(_socket, reinterpret_cast<char *>(&put_request), sizeof(put_request), 0);
@@ -342,6 +345,7 @@ bool Client::put(const string & src_file, const string & dest_dir, EPutType type
     }
 
     EPutStates state = EPutStates::SendData;
+    size_t data_sent = 0;
     bool finished_sending = false;
 
     while (state != EPutStates::Finish)
@@ -369,8 +373,10 @@ bool Client::put(const string & src_file, const string & dest_dir, EPutType type
                     return false;
                 }
 
+                data_sent += fragment.payload_len;
                 cout << "[Client::put] Sent data fragment\n";
-                finished_sending = file ? false : true;
+                finished_sending = (data_sent != file_size) ? false : true;
+
                 state = EPutStates::WaitForDataAck;
                 break;
             }
@@ -406,7 +412,7 @@ bool Client::put(const string & src_file, const string & dest_dir, EPutType type
                     file.close();
                     return false;
                 }
-                
+
                 break;
             }
 

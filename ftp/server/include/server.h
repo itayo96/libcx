@@ -38,6 +38,7 @@ private:
 private:
     bool _is_initialized;
     int _socket;
+    string _root_dir;
 };
 
 #endif // SERVER_H

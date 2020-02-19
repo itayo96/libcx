@@ -1,14 +1,14 @@
 #include "session.h"
 #include "utils.h"
 
-Session::Session(const sockaddr_in & client_addr, const int & client_fd) :
-    _client_addr(client_addr), _client_socket(client_fd)
+Session::Session(const sockaddr_in & client_addr, const int & client_fd, const string & root_dir) :
+    _client_addr(client_addr), _client_socket(client_fd), _root_dir(root_dir)
 {
     // set deafult timeout on client socket
     int ret = setsockopt(_client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&TIMEOUT, sizeof(TIMEOUT));
     if (ret != 0)
     {
-        cout << "[Session] Error setting timeout\n";
+        cout << "[Session] Error setting timeout, errno - " << errno << endl;
     }
 }
 
@@ -87,9 +87,9 @@ bool Session::get()
                 }
 
                 cout << "[Session::get] Got get request\n";
-                std::string full_path = get_full_path(request.file_path);
 
                 // open requested file for reading
+                std::string full_path = get_full_path(request.file_path);
                 file.open(full_path, ios_base::binary);
                 if (!file.good())
                 {
@@ -115,7 +115,8 @@ bool Session::get()
                     return false;
                 }
 
-                state = EGetStates::Finish;
+                cout << "[Session::get] Sent get response\n";
+                state = EGetStates::SendData;
                 break;
             }
 
@@ -255,7 +256,7 @@ bool Session::put()
 
     cout << "[Session::put] Got put request\n";
     std::string file_path(request.file_path);
-    std::string full_path = ROOT_DIR + file_path;
+    std::string full_path = _root_dir + file_path;
 
     // check the put type and forward to correct function
     switch (request.put_type)
@@ -569,7 +570,6 @@ bool Session::put_single_block(PutRequest & request)
     }
     
     file.close();
-    free(data);
     return true;
 }
 

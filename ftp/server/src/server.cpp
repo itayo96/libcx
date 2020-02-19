@@ -3,6 +3,7 @@
 
 struct Connection
 {
+    string root_dir;
     int client_fd;
     sockaddr_in client_addr;
 };
@@ -34,7 +35,8 @@ bool Server::setup(server_config & config)
         return false;
     }
 
-    ROOT_DIR = config.root_dir;
+    _root_dir = config.root_dir;
+    
     _is_initialized = true;
 
     cout << "[Server::setup] Setup done, ready to run\n";
@@ -70,11 +72,13 @@ void Server::run()
             continue;
         }
 
+        conn->root_dir = _root_dir;
+
         cout << "[Server::run] Recieved new connection\n";
 
         // create a thread to handle this session
         pthread_t thread;
-        pthread_create(&thread, nullptr, Server::handle_connection, reinterpret_cast<void *>(&conn));
+        pthread_create(&thread, nullptr, Server::handle_connection, reinterpret_cast<void *>(conn));
     }
 }
 
@@ -84,7 +88,7 @@ void * Server::handle_connection(void * connection)
 
     // create and start a new session for this connection
     Connection * conn = reinterpret_cast<Connection*>(connection);
-    Session session(conn->client_addr, conn->client_fd);
+    Session session(conn->client_addr, conn->client_fd, conn->root_dir);
     
     if (session.start())
     {

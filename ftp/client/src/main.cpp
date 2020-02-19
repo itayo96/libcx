@@ -13,7 +13,7 @@ void print_usage()
 
 int main(int argc, char *argv[])
 {
-    if (argc < 3)
+    if (argc < 2)
     {
         cout << "Too few arguments, type ftp-client -h|--help|--usage for usage\n";
         return 1;
