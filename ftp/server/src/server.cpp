@@ -15,11 +15,11 @@ bool Server::setup(server_config & config)
     _socket = socket(AF_INET, SOCK_STREAM, 0);
     if (_socket < 0)
     {
-        cout << "[Server::setup] Failed to create socket, errno" << _socket << "\n";
+        cout << "[Server::setup] Failed to create socket, errno" << _socket << endl;
         return false;
     }
 
-    // create server address
+    // create server address (localhost)
     struct sockaddr_in serv_addr;
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
@@ -30,7 +30,7 @@ bool Server::setup(server_config & config)
     err = bind(_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     if (err < 0)
     {
-        cout << "[Server::setup] Failed to bind socket, errno" << err << "\n";
+        cout << "[Server::setup] Failed to bind socket, errno" << err << endl;
         return false;
     }
 
@@ -44,6 +44,13 @@ bool Server::setup(server_config & config)
 
 void Server::run()
 {
+    // check that the server is initialized
+    if (!_is_initialized)
+    {
+        cout << "[Server::run] Server not initialized\n";
+        return;
+    }
+
     // start listening for connections
     listen(_socket, MAX_CONNECTIONS);
 
@@ -59,7 +66,7 @@ void Server::run()
         
         if (conn->client_fd < 0)
         {
-            cout << "[Server::run] Failed to accept connection, errno " << conn->client_fd << "\n";
+            cout << "[Server::run] Failed to accept connection, errno " << conn->client_fd << endl;
             continue;
         }
 
@@ -73,7 +80,7 @@ void Server::run()
 
 void * Server::handle_connection(void * connection)
 {
-    cout << "[Server::handle_connection] Handling new connection, thread " << pthread_self() << "\n";
+    cout << "[Server::handle_connection] Handling new connection, thread " << pthread_self() << endl;
 
     // create and start a new session for this connection
     Connection * conn = reinterpret_cast<Connection*>(connection);
@@ -81,11 +88,11 @@ void * Server::handle_connection(void * connection)
     
     if (session.start())
     {
-        cout << "[Server::handle_connection] Successfully finished session, thread " << pthread_self() << "\n";
+        cout << "[Server::handle_connection] Successfully finished session, thread " << pthread_self() << endl;
     }
     else
     {
-        cout << "[Server::handle_connection] Error handling session, thread " << pthread_self() << "\n";
+        cout << "[Server::handle_connection] Error handling session, thread " << pthread_self() << endl;
     }
 
     return nullptr; // returning nullptr to clear a compilation warning

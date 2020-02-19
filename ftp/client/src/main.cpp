@@ -8,7 +8,7 @@ void print_usage()
 {
     cout << "usage: ftp-client get --src=source_file_on_server [--dest=destination_directory]\n";
     cout << "usage: ftp-client put --type=fragments|block --src=source_file [--dest=destination_directory_on_server]\n";
-    cout << "usage: ftp-client attack --type=double-free|password\n";
+    cout << "usage: ftp-client attack --type=double-free|privilege-escalation\n";
 }
 
 int main(int argc, char *argv[])
@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    Client::client_config config;
+    Client::client_command config;
     string command(cmdl[1]);
 
     if (command.compare("put") == 0)
@@ -55,9 +55,6 @@ int main(int argc, char *argv[])
 
         cmdl("src") >> config.src_file;
         cmdl("dest", "") >> config.dest_dir;
-
-        // RUN CLIENT
-        
     }
     else if (command.compare("get") == 0)
     {
@@ -70,8 +67,6 @@ int main(int argc, char *argv[])
         config.command = ECommandType::Get;
         cmdl("src") >> config.src_file;
         cmdl("dest", "") >> config.dest_dir;
-
-        // RUN CLIENT
     }
     else if (command.compare("attack") == 0)
     {
@@ -83,9 +78,9 @@ int main(int argc, char *argv[])
 
         string type;
         cmdl("type") >> type;
-        if (type.compare("password") == 0)
+        if (type.compare("privilege-escalation") == 0)
         {
-            config.command = ECommandType::AttackGetPassword;
+            config.command = ECommandType::AttackPrivilegeEscalation;
         }
         else if (type.compare("double-free") == 0)
         {
@@ -95,8 +90,6 @@ int main(int argc, char *argv[])
         {
             cout << "Attack type not supported, type ftp-client --help for usage\n";
         }
-
-        // RUN CLIENT
     }
     else
     {
@@ -104,5 +97,21 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    // create and setup client
+    Client client;
+    if (!client.setup())
+    {
+        cout << "Error setting up client\n";
+        return 1;
+    }
+
+    // execute the command parsed from cli
+    if (!client.execute(config))
+    {
+        cout << "Error running client command\n";
+        return 1;
+    }
+
+    cout << "Client finished running successfully!\n";
     return 0;
 }

@@ -16,6 +16,7 @@ using namespace std;
 enum class EGetStates
 {
     WaitForGetRequest,
+    SendGetResponse,
     SendData,
     WaitForDataAck,
     WaitForDisconnect,

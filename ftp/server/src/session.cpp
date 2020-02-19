@@ -1,4 +1,5 @@
 #include "session.h"
+#include "utils.h"
 
 Session::Session(const sockaddr_in & client_addr, const int & client_fd) :
     _client_addr(client_addr), _client_socket(client_fd)
@@ -19,7 +20,7 @@ bool Session::start()
 
     if (len != sizeof(start_request))
     {
-        cout << "[Session::start] Error reading protocol start request - " << len << "\n";
+        cout << "[Session::start] Error reading protocol start request - " << len << endl;
         return false;
     }
 
@@ -32,7 +33,7 @@ bool Session::start()
 
     // save client id for this session
     _client_id = start_request.header.client_id;
-    cout << "[Session::start] Starting protocol for client " << _client_id << "\n";
+    cout << "[Session::start] Starting protocol for client " << _client_id << endl;
 
     // send a response to the client
     if (!send_protocol_start_response())
@@ -74,7 +75,7 @@ bool Session::get()
                 len = read(_client_socket, reinterpret_cast<void *>(&request), sizeof(request));
                 if (len < 0)
                 {
-                    cout << "[Session::get] Error reading get request - " << len << "\n";
+                    cout << "[Session::get] Error reading get request - " << len << endl;
                     return false;
                 }
                 
@@ -97,7 +98,24 @@ bool Session::get()
                     break;
                 }
 
-                state = EGetStates::SendData;
+                state = EGetStates::SendGetResponse;
+                break;
+            }
+
+            case (EGetStates::SendGetResponse):
+            {
+                GetResponse response;
+                response.status = EProtocolStatus::Success;
+                response.file_size = filesize(file);
+
+                len = send(_client_socket, &response, sizeof(GetResponse), 0);
+                if (len < 0)
+                {
+                    cout << "[Session::get] Error sending get response - " << len << endl;
+                    return false;
+                }
+
+                state = EGetStates::Finish;
                 break;
             }
 
@@ -117,7 +135,7 @@ bool Session::get()
                 len = send(_client_socket, &fragment, sizeof(DataFragment), 0);
                 if (len < 0)
                 {
-                    cout << "[Session::get] Error sending data fragment - " << len << "\n";
+                    cout << "[Session::get] Error sending data fragment - " << len << endl;
                     file.close();
                     return false;
                 }
@@ -135,7 +153,7 @@ bool Session::get()
                 len = read(_client_socket, reinterpret_cast<void *>(&ack), sizeof(ack));
                 if (len < 0)
                 {
-                    cout << "[Session::get] Error reading data fragment ack - " << len << "\n";
+                    cout << "[Session::get] Error reading data fragment ack - " << len << endl;
                     file.close();
                     return false;
                 }
@@ -155,7 +173,7 @@ bool Session::get()
                 }
                 else
                 {
-                    cout << "[Session::get] Fragment ack bad status - " << (int)ack.status << "\n";
+                    cout << "[Session::get] Fragment ack bad status - " << (int)ack.status << endl;
                     state = EGetStates::Finish;
                 }
                 
@@ -171,7 +189,7 @@ bool Session::get()
                 len = send(_client_socket, &response, sizeof(GetResponse), 0);
                 if (len < 0)
                 {
-                    cout << "[Session::get] Error sending file not found - " << len << "\n";
+                    cout << "[Session::get] Error sending file not found - " << len << endl;
                     return false;
                 }
 
@@ -186,7 +204,7 @@ bool Session::get()
                 len = read(_client_socket, reinterpret_cast<void *>(&disconnect), sizeof(disconnect));
                 if (len < 0)
                 {
-                    cout << "[Session::get] Error reading disconnect message - " << len << "\n";
+                    cout << "[Session::get] Error reading disconnect message - " << len << endl;
                     file.close();
                     return false;
                 }
@@ -224,7 +242,7 @@ bool Session::put()
     ssize_t len = read(_client_socket, reinterpret_cast<void *>(&request), sizeof(request));
     if (len < 0)
     {
-        cout << "[Session::put] Error reading put request - " << len << "\n";
+        cout << "[Session::put] Error reading put request - " << len << endl;
         return false;
     }
     
@@ -273,7 +291,7 @@ bool Session::put_fragments(PutRequest & request)
     len = send(_client_socket, &response, sizeof(PutResponse), 0);
     if (len < 0)
     {
-        cout << "[Session::put_fragments] Error sending put response - " << len << "\n";
+        cout << "[Session::put_fragments] Error sending put response - " << len << endl;
         return false;
     }
 
@@ -292,7 +310,7 @@ bool Session::put_fragments(PutRequest & request)
 
                 if (len < 0)
                 {
-                    cout << "[Session::put_fragments] Error reading data fragment - " << len << "\n";
+                    cout << "[Session::put_fragments] Error reading data fragment - " << len << endl;
                     file.close();
                     return false;
                 }
@@ -330,7 +348,7 @@ bool Session::put_fragments(PutRequest & request)
                 len = send(_client_socket, &ack, sizeof(ack), 0);
                 if (len < 0)
                 {
-                    cout << "[Session::put_fragments] Error sending data fragment ack - " << len << "\n";
+                    cout << "[Session::put_fragments] Error sending data fragment ack - " << len << endl;
                     file.close();
                     return false;
                 }
@@ -357,7 +375,7 @@ bool Session::put_fragments(PutRequest & request)
 
                 if (len < 0)
                 {
-                    cout << "[Session::put_fragments] Error reading disconnect message - " << len << "\n";
+                    cout << "[Session::put_fragments] Error reading disconnect message - " << len << endl;
                     file.close();
                     return false;
                 }
@@ -420,7 +438,7 @@ bool Session::put_single_block(PutRequest & request)
     len = send(_client_socket, &response, sizeof(PutResponse), 0);
     if (len < 0)
     {
-        cout << "[Session::put_single_block] Error sending put response - " << len << "\n";
+        cout << "[Session::put_single_block] Error sending put response - " << len << endl;
         return false;
     }
 
@@ -439,7 +457,7 @@ bool Session::put_single_block(PutRequest & request)
 
                 if (len < 0)
                 {
-                    cout << "[Session::put_single_block] Error reading data fragment - " << len << "\n";
+                    cout << "[Session::put_single_block] Error reading data fragment - " << len << endl;
                     free(data);
                     file.close();
                     return false;
@@ -480,7 +498,7 @@ bool Session::put_single_block(PutRequest & request)
                 len = send(_client_socket, &ack, sizeof(ack), 0);
                 if (len < 0)
                 {
-                    cout << "[Session::put_single_block] Error sending data fragment ack - " << len << "\n";
+                    cout << "[Session::put_single_block] Error sending data fragment ack - " << len << endl;
                     free(data);
                     file.close();
                     return false;
@@ -520,7 +538,7 @@ bool Session::put_single_block(PutRequest & request)
 
                 if (len < 0)
                 {
-                    cout << "[Session::put_single_block] Error reading disconnect message - " << len << "\n";
+                    cout << "[Session::put_single_block] Error reading disconnect message - " << len << endl;
                     free(data);
                     file.close();
                     return false;
@@ -566,7 +584,7 @@ bool Session::send_protocol_start_response()
 
     if (len != sizeof(response))
     {
-        cout << "[Session::send_protocol_start_response] Error sending response - " << len << "\n";
+        cout << "[Session::send_protocol_start_response] Error sending response - " << len << endl;
         return false;
     }
 

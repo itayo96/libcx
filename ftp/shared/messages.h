@@ -3,13 +3,13 @@
 
 #include <sys/types.h>
 #include <unistd.h>
+#include <cstring>
 #include "shared_config.h"
 
 enum class EOpcodes
 {
     ProtocolStartRequest,
     ProtocolStartResponse,
-    ProtocolEnd,
     PutRequest,
     PutResponse,
     GetRequest,
@@ -73,14 +73,6 @@ struct ProtocolStartResponse
     ProtocolStartResponse() : header(EOpcodes::ProtocolStartResponse, sizeof(ProtocolStartResponse), getpid()) {}
 };
 
-struct ProtocolEnd
-{
-    Header header;
-    EProtocolStatus status;
-
-    ProtocolEnd() : header(EOpcodes::ProtocolEnd, sizeof(ProtocolEnd), getpid()) {}
-};
-
 struct PutRequest
 {
     Header header;
@@ -88,7 +80,7 @@ struct PutRequest
     char file_path[MAX_PATH_LEN];
     size_t file_size;
 
-    PutRequest() : header(EOpcodes::PutRequest, sizeof(PutRequest), getpid()) {}
+    PutRequest() : header(EOpcodes::PutRequest, sizeof(PutRequest), getpid()) { memset(file_path, 0, MAX_PATH_LEN); }
 };
 
 struct PutResponse
@@ -104,7 +96,7 @@ struct GetRequest
     Header header;
     char file_path[MAX_PATH_LEN];
 
-    GetRequest() : header(EOpcodes::GetRequest, sizeof(GetRequest), getpid()) {}
+    GetRequest() : header(EOpcodes::GetRequest, sizeof(GetRequest), getpid()) { memset(file_path, 0, MAX_PATH_LEN); }
 };
 
 struct GetResponse
@@ -122,7 +114,7 @@ struct DataFragment
     size_t payload_len;
     uint8_t payload[FRAGMENT_SIZE];
 
-    DataFragment() : header(EOpcodes::DataFragment, sizeof(DataFragment), getpid()) {}
+    DataFragment() : header(EOpcodes::DataFragment, sizeof(DataFragment), getpid()) { memset(payload, 0, FRAGMENT_SIZE); }
 };
 
 struct DataFragmentAck

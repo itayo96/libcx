@@ -20,7 +20,7 @@ public:
     };
 
     Server() : _is_initialized(false) {};
-    ~Server() {};
+    ~Server() { close(_socket); };
 
     /**
      * initialize the server 
