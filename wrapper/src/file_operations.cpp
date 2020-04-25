@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 /**
  * Function wrappers declerations
@@ -19,6 +20,11 @@ static int (*_fgetc)(FILE *stream);
 static char * (*_fgets)(char *str, int n, FILE *stream);
 static size_t (*_fread)(void *ptr, size_t size, size_t nmemb, FILE *stream);
 static size_t (*_fwrite)(const void *ptr, size_t size, size_t nmemb, FILE *stream);
+static int (*_feof)(FILE *stream);
+static int (*_fseek)(FILE *stream, long int offset, int whence);
+static long int (*_ftell)(FILE *stream);
+static int (*_fprintf)(FILE *stream, const char *format, ...);
+static int (*_fscanf)(FILE *stream, const char *format, ...);
 
 
 /**
@@ -165,8 +171,7 @@ extern "C" size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
         ptr,
         size,
         nmemb,
-        return_value
-        );
+        return_value);
 
     libcx.report(msg_length);
 
@@ -189,8 +194,117 @@ extern "C" size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *strea
         ptr,
         size,
         nmemb,
-        return_value
-        );
+        return_value);
+
+    libcx.report(msg_length);
+
+    return return_value;
+}
+
+extern "C" int feof(FILE *stream)
+{
+    _feof = (decltype(_feof))dlsym(RTLD_NEXT, "feof");
+
+    puts("wrapped feof\n");
+
+    int return_value = _feof(stream);
+
+    size_t msg_length = message_builder::build_message(
+        libcx.buffer, 
+        ELibCall::feof, 
+        libcx.pid,
+        stream,
+        return_value);
+
+    libcx.report(msg_length);
+
+    return return_value;
+}
+
+extern "C" int fseek(FILE *stream, long int offset, int whence)
+{
+    _fseek = (decltype(_fseek))dlsym(RTLD_NEXT, "fseek");
+
+    puts("wrapped fseek\n");
+
+    int return_value = _fseek(stream, offset, whence);
+
+    size_t msg_length = message_builder::build_message(
+        libcx.buffer, 
+        ELibCall::fseek, 
+        libcx.pid,
+        stream,
+        offset,
+        whence,
+        return_value);
+
+    libcx.report(msg_length);
+
+    return return_value;
+}
+
+extern "C" long int ftell(FILE *stream)
+{
+    _ftell = (decltype(_ftell))dlsym(RTLD_NEXT, "ftell");
+
+    puts("wrapped ftell\n");
+
+    long int return_value = _ftell(stream);
+
+    size_t msg_length = message_builder::build_message(
+        libcx.buffer, 
+        ELibCall::ftell, 
+        libcx.pid,
+        stream,
+        return_value);
+
+    libcx.report(msg_length);
+
+    return return_value;
+}
+
+extern "C" int fprintf(FILE *stream, const char *format, ...)
+{
+    _fprintf = (decltype(_fprintf))dlsym(RTLD_NEXT, "fprintf");
+
+    puts("wrapped fprintf\n");
+
+    va_list args;
+    va_start(args, format);
+    int return_value = _fprintf(stream, format, args);
+    va_end(args);
+
+    size_t msg_length = message_builder::build_message(
+        libcx.buffer, 
+        ELibCall::fprintf, 
+        libcx.pid,
+        stream,
+        message_builder::buffer((uint8_t*)format, strlen(format)),
+        return_value);
+
+    libcx.report(msg_length);
+
+    return return_value;
+}
+
+extern "C" int fscanf(FILE *stream, const char *format, ...)
+{
+    _fscanf = (decltype(_fscanf))dlsym(RTLD_NEXT, "fscanf");
+
+    puts("wrapped fscanf\n");
+
+    va_list args;
+    va_start(args, format);
+    int return_value = _fscanf(stream, format, args);
+    va_end(args);
+
+    size_t msg_length = message_builder::build_message(
+        libcx.buffer, 
+        ELibCall::fscanf, 
+        libcx.pid,
+        stream,
+        message_builder::buffer((uint8_t*)format, strlen(format)),
+        return_value);
 
     libcx.report(msg_length);
 
