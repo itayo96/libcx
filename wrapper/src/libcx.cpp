@@ -1,5 +1,6 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include "libcx.h"
 #include <stdio.h>
@@ -65,5 +66,3 @@ void initializer::report(size_t message_size)
         printf("error sending connection message - %d\n", actual_size);
     }
 }
-
-#endif

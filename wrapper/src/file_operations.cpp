@@ -1,5 +1,6 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include "libcx.h"
 #include <stdio.h>
@@ -13,6 +14,11 @@
 static FILE * (*_fopen)(const char *filename, const char *mode);
 static int (*_fclose)(FILE *stream);
 static int (*_fputc)(int character, FILE *stream);
+static int (*_fputs)(const char *str, FILE *stream);
+static int (*_fgetc)(FILE *stream);
+static char * (*_fgets)(char *str, int n, FILE *stream);
+static size_t (*_fread)(void *ptr, size_t size, size_t nmemb, FILE *stream);
+static size_t (*_fwrite)(const void *ptr, size_t size, size_t nmemb, FILE *stream);
 
 
 /**
@@ -29,10 +35,10 @@ extern "C" FILE *fopen(const char *filename, const char *mode)
     size_t msg_length = message_builder::build_message(
         libcx.buffer, 
         ELibCall::fopen, 
-        libcx.pid, 
+        libcx.pid,
+        return_value,
         message_builder::buffer((uint8_t*)filename, strlen(filename)), 
-        message_builder::buffer((uint8_t*)mode, strlen(mode)),
-        return_value);
+        message_builder::buffer((uint8_t*)mode, strlen(mode)));
 
     libcx.report(msg_length);
 
@@ -63,15 +69,56 @@ extern "C" int fputc(int character, FILE *stream)
 {
     _fputc = (decltype(_fputc))dlsym(RTLD_NEXT, "fputc");
 
-    puts("wrapped fclose\n");
+    puts("wrapped fputc\n");
 
     int return_value = _fputc(character, stream);
 
     size_t msg_length = message_builder::build_message(
         libcx.buffer, 
-        ELibCall::fclose, 
+        ELibCall::fputc, 
         libcx.pid,
+        stream,
         character,
+        return_value);
+
+    libcx.report(msg_length);
+
+    return return_value;
+}
+
+extern "C" int fputs(const char *str, FILE *stream)
+{
+    _fputs = (decltype(_fputs))dlsym(RTLD_NEXT, "fputs");
+
+    puts("wrapped fputs\n");
+
+    int return_value = _fputs(str, stream);
+
+    size_t msg_length = message_builder::build_message(
+        libcx.buffer, 
+        ELibCall::fputs, 
+        libcx.pid,
+        stream,
+        strlen(str), 
+        return_value);
+
+    libcx.report(msg_length);
+
+    return return_value;
+}
+
+extern "C" int fgetc(FILE *stream)
+{
+    _fgetc = (decltype(_fgetc))dlsym(RTLD_NEXT, "fgetc");
+
+    puts("wrapped fgetc\n");
+
+    int return_value = _fgetc(stream);
+
+    size_t msg_length = message_builder::build_message(
+        libcx.buffer, 
+        ELibCall::fgetc, 
+        libcx.pid,
         stream,
         return_value);
 
@@ -80,4 +127,72 @@ extern "C" int fputc(int character, FILE *stream)
     return return_value;
 }
 
-#endif
+extern "C" char * fgets(char *str, int n, FILE *stream)
+{
+    _fgets = (decltype(_fgets))dlsym(RTLD_NEXT, "fgets");
+
+    puts("wrapped fgets\n");
+
+    char * return_value = _fgets(str, n, stream);
+
+    size_t msg_length = message_builder::build_message(
+        libcx.buffer, 
+        ELibCall::fgets, 
+        libcx.pid,
+        stream,
+        strlen(str),
+        n,
+        return_value ? strlen(return_value) : 0);
+
+    libcx.report(msg_length);
+
+    return return_value;
+}
+
+extern "C" size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
+{
+    _fread = (decltype(_fread))dlsym(RTLD_NEXT, "fread");
+
+    puts("wrapped fread\n");
+
+    size_t return_value = _fread(ptr, size, nmemb, stream);
+
+    size_t msg_length = message_builder::build_message(
+        libcx.buffer, 
+        ELibCall::fread, 
+        libcx.pid,
+        stream,
+        ptr,
+        size,
+        nmemb,
+        return_value
+        );
+
+    libcx.report(msg_length);
+
+    return return_value;
+}
+
+extern "C" size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
+{
+    _fwrite = (decltype(_fwrite))dlsym(RTLD_NEXT, "fwrite");
+
+    puts("wrapped fwrite\n");
+
+    size_t return_value = _fwrite(ptr, size, nmemb, stream);
+
+    size_t msg_length = message_builder::build_message(
+        libcx.buffer, 
+        ELibCall::fwrite, 
+        libcx.pid,
+        stream,
+        ptr,
+        size,
+        nmemb,
+        return_value
+        );
+
+    libcx.report(msg_length);
+
+    return return_value;
+}
