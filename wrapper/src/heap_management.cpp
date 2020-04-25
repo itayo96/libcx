@@ -1,3 +1,4 @@
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 
 #include "libcx.h"
@@ -28,3 +29,5 @@ extern "C" void *calloc(size_t nmemb, size_t size)
 
     return return_value;
 }
+
+#endif

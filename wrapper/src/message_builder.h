@@ -12,6 +12,8 @@ namespace message_builder
     {
         uint8_t *ptr;
         size_t size;
+
+        buffer(uint8_t * buff, size_t len) : ptr(buff), size(len) {}
     };
 
     template<class Param>

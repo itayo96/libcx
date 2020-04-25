@@ -1,3 +1,4 @@
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 
 #include "libcx.h"
@@ -11,6 +12,7 @@
  */
 static FILE * (*_fopen)(const char *filename, const char *mode);
 static int (*_fclose)(FILE *stream);
+static int (*_fputc)(int character, FILE *stream);
 
 
 /**
@@ -56,3 +58,26 @@ extern "C" int fclose(FILE *stream)
 
     return return_value;
 }
+
+extern "C" int fputc(int character, FILE *stream)
+{
+    _fputc = (decltype(_fputc))dlsym(RTLD_NEXT, "fputc");
+
+    puts("wrapped fclose\n");
+
+    int return_value = _fputc(character, stream);
+
+    size_t msg_length = message_builder::build_message(
+        libcx.buffer, 
+        ELibCall::fclose, 
+        libcx.pid,
+        character,
+        stream,
+        return_value);
+
+    libcx.report(msg_length);
+
+    return return_value;
+}
+
+#endif
