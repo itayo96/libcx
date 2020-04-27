@@ -1,0 +1,1 @@
+/usr/bin/c++  -pthread  -rdynamic CMakeFiles/ftp-server.dir/src/main.cpp.o CMakeFiles/ftp-server.dir/src/server.cpp.o CMakeFiles/ftp-server.dir/src/session.cpp.o  -o ftp-server 

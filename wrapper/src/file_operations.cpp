@@ -64,7 +64,7 @@ extern "C" int fclose(FILE *stream)
         ELibCall::fclose, 
         libcx.pid, 
         stream,
-        return_value);
+        (long long)return_value);
 
     libcx.report(msg_length);
 

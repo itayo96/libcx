@@ -1,0 +1,3 @@
+/home/yair/Projects/LibCx/libcx/ftp/server/CMakeFiles/rebuild_cache.dir
+/home/yair/Projects/LibCx/libcx/ftp/server/CMakeFiles/ftp-server.dir
+/home/yair/Projects/LibCx/libcx/ftp/server/CMakeFiles/edit_cache.dir

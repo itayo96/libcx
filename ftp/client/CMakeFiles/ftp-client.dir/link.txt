@@ -1,0 +1,1 @@
+/usr/bin/c++    -rdynamic CMakeFiles/ftp-client.dir/src/client.cpp.o CMakeFiles/ftp-client.dir/src/main.cpp.o  -o ftp-client 
