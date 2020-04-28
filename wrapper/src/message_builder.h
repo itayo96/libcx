@@ -11,7 +11,7 @@ namespace message_builder
     struct buffer
     {
         uint8_t *ptr;
-        size_t size;
+        uint64_t size;
 
         buffer(uint8_t * buff, size_t len) : ptr(buff), size(len) {}
     };
@@ -50,8 +50,8 @@ namespace message_builder
     template<class ...Params>
     static size_t build_message(uint8_t *ptr, ELibCall lib_call, pid_t pid, Params ...params)
     {
-        uint64_t params_length = serialize(ptr + sizeof(uint64_t), lib_call, pid, params...);
-        uint64_t entire_message_length = params_length + sizeof(uint64_t);
+        uint32_t params_length = serialize(ptr + sizeof(uint32_t), lib_call, pid, params...);
+        uint32_t entire_message_length = params_length + sizeof(uint32_t);
         parse(ptr, entire_message_length);
         return entire_message_length;
     }

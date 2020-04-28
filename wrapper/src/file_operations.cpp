@@ -42,7 +42,7 @@ extern "C" FILE *fopen(const char *filename, const char *mode)
         libcx.buffer, 
         ELibCall::fopen, 
         libcx.pid,
-        return_value,
+        (uint64_t)return_value,
         message_builder::buffer((uint8_t*)filename, strlen(filename)), 
         message_builder::buffer((uint8_t*)mode, strlen(mode)));
 
@@ -63,8 +63,8 @@ extern "C" int fclose(FILE *stream)
         libcx.buffer, 
         ELibCall::fclose, 
         libcx.pid, 
-        stream,
-        (long long)return_value);
+        (uint64_t)stream,
+        (uint64_t)return_value);
 
     libcx.report(msg_length);
 

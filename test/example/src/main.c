@@ -16,7 +16,7 @@ void main()
     FILE * f = fopen("kakashka.txt", "w");
     fclose (f);
     printf("Omer2\n");
-
+    
     sleep(1);
 
     while(1);
