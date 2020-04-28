@@ -12,10 +12,11 @@ void main()
 {
     printf("program main\n");
 
-    for (int i = 0; i<5; i++) fu_horev();
-
+   // for (int i = 0; i<5; i++) fu_horev();
+    FILE * f = fopen("kakashka.txt", "w");
+    fclose (f);
     printf("Omer2\n");
-
+    
     sleep(1);
 
     while(1);

@@ -11,7 +11,9 @@ namespace message_builder
     struct buffer
     {
         uint8_t *ptr;
-        size_t size;
+        uint64_t size;
+
+        buffer(uint8_t * buff, size_t len) : ptr(buff), size(len) {}
     };
 
     template<class Param>
