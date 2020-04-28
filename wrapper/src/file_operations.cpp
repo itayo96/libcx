@@ -83,9 +83,9 @@ extern "C" int fputc(int character, FILE *stream)
         libcx.buffer, 
         ELibCall::fputc, 
         libcx.pid,
-        stream,
-        character,
-        return_value);
+        (uint64_t)stream,
+        (uint32_t)character,
+        (uint32_t)return_value);
 
     libcx.report(msg_length);
 
@@ -104,9 +104,9 @@ extern "C" int fputs(const char *str, FILE *stream)
         libcx.buffer, 
         ELibCall::fputs, 
         libcx.pid,
-        stream,
-        strlen(str), 
-        return_value);
+        (uint64_t)stream,
+        (uint32_t)strlen(str), 
+        (uint32_t)return_value);
 
     libcx.report(msg_length);
 
@@ -125,8 +125,8 @@ extern "C" int fgetc(FILE *stream)
         libcx.buffer, 
         ELibCall::fgetc, 
         libcx.pid,
-        stream,
-        return_value);
+        (uint64_t)stream,
+        (uint32_t)return_value);
 
     libcx.report(msg_length);
 
@@ -145,10 +145,10 @@ extern "C" char * fgets(char *str, int n, FILE *stream)
         libcx.buffer, 
         ELibCall::fgets, 
         libcx.pid,
-        stream,
-        strlen(str),
-        n,
-        return_value ? strlen(return_value) : 0);
+        (uint64_t)stream,
+        (uint32_t)strlen(str),
+        (uint32_t)n,
+        (uint64_t)return_value ? strlen(return_value) : 0);
 
     libcx.report(msg_length);
 
@@ -167,11 +167,11 @@ extern "C" size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
         libcx.buffer, 
         ELibCall::fread, 
         libcx.pid,
-        stream,
-        ptr,
-        size,
-        nmemb,
-        return_value);
+        (uint64_t)stream,
+        (uint64_t)ptr,
+        (uint32_t)size,
+        (uint32_t)nmemb,
+        (uint32_t)return_value);
 
     libcx.report(msg_length);
 
@@ -190,11 +190,11 @@ extern "C" size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *strea
         libcx.buffer, 
         ELibCall::fwrite, 
         libcx.pid,
-        stream,
-        ptr,
-        size,
-        nmemb,
-        return_value);
+        (uint64_t)stream,
+        (uint64_t)ptr,
+        (uint32_t)size,
+        (uint32_t)nmemb,
+        (uint32_t)return_value);
 
     libcx.report(msg_length);
 
@@ -213,8 +213,8 @@ extern "C" int feof(FILE *stream)
         libcx.buffer, 
         ELibCall::feof, 
         libcx.pid,
-        stream,
-        return_value);
+        (uint64_t)stream,
+        (uint64_t)return_value);
 
     libcx.report(msg_length);
 
@@ -233,10 +233,10 @@ extern "C" int fseek(FILE *stream, long int offset, int whence)
         libcx.buffer, 
         ELibCall::fseek, 
         libcx.pid,
-        stream,
-        offset,
-        whence,
-        return_value);
+        (uint64_t)stream,
+        (uint64_t)offset,
+        (uint32_t)whence,
+        (uint64_t)return_value);
 
     libcx.report(msg_length);
 
@@ -255,8 +255,8 @@ extern "C" long int ftell(FILE *stream)
         libcx.buffer, 
         ELibCall::ftell, 
         libcx.pid,
-        stream,
-        return_value);
+        (uint64_t)stream,
+        (uint64_t)return_value);
 
     libcx.report(msg_length);
 
@@ -278,9 +278,9 @@ extern "C" int fprintf(FILE *stream, const char *format, ...)
         libcx.buffer, 
         ELibCall::fprintf, 
         libcx.pid,
-        stream,
+        (uint64_t)stream,
         message_builder::buffer((uint8_t*)format, strlen(format)),
-        return_value);
+        (uint64_t)return_value);
 
     libcx.report(msg_length);
 
@@ -302,9 +302,9 @@ extern "C" int fscanf(FILE *stream, const char *format, ...)
         libcx.buffer, 
         ELibCall::fscanf, 
         libcx.pid,
-        stream,
+        (uint64_t)stream,
         message_builder::buffer((uint8_t*)format, strlen(format)),
-        return_value);
+        (uint64_t)return_value);
 
     libcx.report(msg_length);
 
