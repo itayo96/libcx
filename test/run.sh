@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ ! -d "env" ]; then
+    mkdir env
+fi
+
 cd example
 ./build.sh
 
