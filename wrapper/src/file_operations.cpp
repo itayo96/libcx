@@ -27,9 +27,7 @@ static int (*_fprintf)(FILE *stream, const char *format, ...);
 static int (*_fscanf)(FILE *stream, const char *format, ...);
 
 
-/**
- * Function wrappers implementations
- */
+
 extern "C" FILE *fopen(const char *filename, const char *mode)
 {
     _fopen = (decltype(_fopen))dlsym(RTLD_NEXT, "fopen");

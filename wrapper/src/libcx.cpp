@@ -22,6 +22,7 @@ std::string home_relative_path(const std::string& path)
 
 initializer::initializer()
 {
+    printf("Starting with version 1.0\n");
     pid = getpid();
 
     fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -49,7 +50,7 @@ initializer::initializer()
     }
 
     // This code actually runs before programs main and even before its static constructors
-    printf("libcx main start pid = %d\n", static_cast<int>(pid));
+    printf("libcx main start pid = %d\n", static_cast<int>(pid)); 
 }
 
 void initializer::report(size_t message_size)
