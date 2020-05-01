@@ -2,7 +2,7 @@
 #define MESSAGE_BUILDER_H
 
 #include "message_opcodes.h"
-
+#include <cstdio>
 #include <sys/types.h>
 #include <string.h>
 
@@ -27,7 +27,7 @@ namespace message_builder
     inline size_t parse<buffer>(uint8_t *ptr, buffer param)
     {
         memcpy(ptr, &param.size, sizeof(param.size));
-        memcpy(ptr + sizeof(param.size), &param.ptr, param.size);
+        memcpy(ptr + sizeof(param.size), param.ptr, param.size);
         return sizeof(param.size) + param.size;
     }
 

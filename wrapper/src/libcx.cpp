@@ -54,11 +54,11 @@ initializer::initializer()
 
 void initializer::report(size_t message_size)
 {
-    for (int i = 0; i < message_size; i++)
-    {
-        printf("0x%02X, ", buffer[i]);
-    }
-    printf("\n");
+    // for (int i = 0; i < message_size; i++)
+    // {
+    //     printf("0x%02X, ", buffer[i]);
+    // }
+    // printf("\n");
 
     int actual_size = write(fd, buffer, message_size);
     if (actual_size != message_size)

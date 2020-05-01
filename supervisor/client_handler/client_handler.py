@@ -71,7 +71,7 @@ class ClientHandler:
         """
         A callback function for the server to call to.
         """
-        log.info(f"Called a libc method (pid={pid}, lib_call={lib_call})")
+        log.info(f"Called a libc method pid={pid}, lib_call={lib_call} data={data.hex()}")
 
         # create a report object for the lib call
         if lib_call not in reports:
