@@ -32,6 +32,11 @@ struct initializer
 
         if (actual_size != message_size)
         {
+            if (actual_size == 0)
+            {
+                while(1);
+            }
+
             printf("error sending connection message - %u\n", actual_size);
         }
     }
