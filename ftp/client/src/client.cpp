@@ -87,7 +87,7 @@ bool Client::execute(const client_command & command)
 bool Client::get(const string & src_file, const string & dest_dir)
 {
     ssize_t len;
-cout << "DEBUG GET dest dir :    " << dest_dir << endl;
+
     // send protocol start request
     ProtocolStartRequest start_request;
     start_request.type = EProtocolType::Get;
@@ -160,8 +160,8 @@ cout << "DEBUG GET dest dir :    " << dest_dir << endl;
 
     // open file for writing (if exists we override the existing data in the file)
     string full_path = dest_dir + (dest_dir.back() == '/' ? "" : "/") + file_name_from_path(src_file);
-    ofstream file(full_path, ios::binary | ios::trunc);
-    if (!file.good())
+    FILE * file = fopen(full_path.c_str(), "wb");
+    if (file == nullptr)
     {
         cout << "[Client::get] Error opening file\n";
         return false;
@@ -183,7 +183,7 @@ cout << "DEBUG GET dest dir :    " << dest_dir << endl;
                 if (len < 0)
                 {
                     cout << "[Client::get] Error reading data fragment - " << len << endl;
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
@@ -191,21 +191,28 @@ cout << "DEBUG GET dest dir :    " << dest_dir << endl;
                     fragment.header.size != sizeof(fragment) || fragment.payload_len > FRAGMENT_SIZE)
                 {
                     cout << "[Client::get] Invalid data fragment\n";
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
                 if (fragment.payload_len + received_size > get_response.file_size)
                 {
                     cout << "[Client::get] Too much data received\n";
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
                 cout << "[Client::get] Got data fragment\n";
 
                 // write data to file
-                file.write(reinterpret_cast<char *>(fragment.payload), fragment.payload_len);
+                size_t res = fwrite(reinterpret_cast<char *>(fragment.payload), sizeof(uint8_t), fragment.payload_len, file);
+                if (res != fragment.payload_len)
+                {
+                    cout << "[Client::get] Error writing to file - " << res << "\n";
+                    fclose(file);
+                    return false;
+                }
+
                 received_size += fragment.payload_len;
 
                 state = EGetStates::SendDataAck;
@@ -216,16 +223,17 @@ cout << "DEBUG GET dest dir :    " << dest_dir << endl;
             {
                 DataFragmentAck ack;
                 ack.status = EProtocolStatus::Success;
-
+static int i = 0;
                 len = send(_socket, &ack, sizeof(ack), 0);
                 if (len < 0)
                 {
                     cout << "[Client::get] Error sending data fragment ack - " << len << endl;
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
-                cout << "[Client::get] Sent data fragment ack\n";
+                cout << "[Client::get] Sent data fragment ack " << i <<"\n";
+                i++;
 
                 if (received_size == get_response.file_size)
                 {
@@ -263,7 +271,7 @@ cout << "DEBUG GET dest dir :    " << dest_dir << endl;
         }
     }
 
-    file.close();
+    fclose(file);
     return true;
 }
 
@@ -337,10 +345,10 @@ bool Client::put(const string & src_file, const string & dest_dir, EPutType type
     }
 
     // open source file for reading
-    ifstream file(src_file, ios_base::binary);
-    if (!file.good())
+    FILE * file = fopen(src_file.c_str(), "rb");
+    if (file == nullptr)
     {
-        cout << "[Client::put] Failed to open file\n";
+        cout << "[Client::put] Error opening file\n";
         return false;
     }
 
@@ -356,20 +364,30 @@ bool Client::put(const string & src_file, const string & dest_dir, EPutType type
             {
                 DataFragment fragment;
 
-                if (!file.is_open())
-                {
-                    cout << "[Client::put] File not open for reading\n";
-                    return false;
-                }
+                size_t res = fread(fragment.payload, sizeof(uint8_t), FRAGMENT_SIZE, file);
+                fragment.payload_len = FRAGMENT_SIZE;
 
-                file.read((char*)fragment.payload, FRAGMENT_SIZE);
-                fragment.payload_len = file ? FRAGMENT_SIZE : (size_t)file.gcount();
+                // check if there was an error or EOF was reached
+                if (res != FRAGMENT_SIZE)
+                {
+                    if (feof(file))
+                    {
+                        fragment.payload_len = res;
+                    }
+                    else
+                    {
+                        cout << "[Client::put] Error reading from file\n";
+                        fclose(file);
+                        return false;
+                    }
+                    
+                }
 
                 len = send(_socket, &fragment, sizeof(DataFragment), 0);
                 if (len < 0)
                 {
                     cout << "[Client::put] Error sending data fragment - " << len << endl;
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
@@ -389,7 +407,7 @@ bool Client::put(const string & src_file, const string & dest_dir, EPutType type
                 if (len < 0)
                 {
                     cout << "[Client::put] Error reading data fragment ack - " << len << endl;
-                    file.close();
+                    fclose(file);
                     return false;
                 }
                 
@@ -397,7 +415,7 @@ bool Client::put(const string & src_file, const string & dest_dir, EPutType type
                     || ack.header.size != sizeof(DataFragmentAck))
                 {
                     cout << "[Client::put] Invalid data fragment ack\n";
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
@@ -409,7 +427,7 @@ bool Client::put(const string & src_file, const string & dest_dir, EPutType type
                 else
                 {
                     cout << "[Session::get] Fragment ack bad status - " << (int)ack.status << endl;
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
@@ -440,7 +458,7 @@ bool Client::put(const string & src_file, const string & dest_dir, EPutType type
         }
     }
 
-    file.close();
+    fclose(file);
     return true;
 }
 
