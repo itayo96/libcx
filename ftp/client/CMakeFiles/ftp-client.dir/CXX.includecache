@@ -12,14 +12,6 @@ client.h
 utils.h
 /home/yair/Projects/LibCx/libcx/ftp/client/src/utils.h
 
-/home/yair/Projects/LibCx/libcx/ftp/client/src/main.cpp
-iostream
--
-argh.h
-/home/yair/Projects/LibCx/libcx/ftp/client/src/argh.h
-client.h
-/home/yair/Projects/LibCx/libcx/ftp/client/src/client.h
-
 include/client.h
 iostream
 -
@@ -41,24 +33,6 @@ shared_config.h
 include/shared_config.h
 messages.h
 include/messages.h
-
-shared/argh.h
-algorithm
--
-sstream
--
-limits
--
-string
--
-vector
--
-set
--
-map
--
-cassert
--
 
 shared/messages.h
 sys/types.h

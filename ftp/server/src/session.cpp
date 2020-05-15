@@ -59,10 +59,13 @@ bool Session::start()
 
 bool Session::get()
 {
-    ifstream file;
+    FILE * file;
     EGetStates state = EGetStates::WaitForGetRequest;
     ssize_t len;
     bool finished_sending = false;
+    size_t file_size;
+    size_t sent_data = 0;
+    std::string full_path;
 
     while (state != EGetStates::Finish)
     {
@@ -89,14 +92,16 @@ bool Session::get()
                 cout << "[Session::get] Got get request\n";
 
                 // open requested file for reading
-                std::string full_path = get_full_path(request.file_path);
-                file.open(full_path, ios_base::binary);
-                if (!file.good())
+                full_path = get_full_path(request.file_path);
+                file = fopen(full_path.c_str(), "rb");
+                if (file == nullptr)
                 {
                     cout << "[Session::get] File not found\n";
                     state = EGetStates::FileNotFound;
                     break;
                 }
+
+                file_size = filesize(full_path);
 
                 state = EGetStates::SendGetResponse;
                 break;
@@ -106,7 +111,8 @@ bool Session::get()
             {
                 GetResponse response;
                 response.status = EProtocolStatus::Success;
-                response.file_size = filesize(file);
+                response.file_size = file_size;
+                printf("TOTAL SIZE: %d\n", response.file_size);
 
                 len = send(_client_socket, &response, sizeof(GetResponse), 0);
                 if (len < 0)
@@ -124,25 +130,34 @@ bool Session::get()
             {
                 DataFragment fragment;
 
-                if (!file.is_open())
+                size_t res = fread(fragment.payload, sizeof(uint8_t), FRAGMENT_SIZE, file);
+                fragment.payload_len = FRAGMENT_SIZE;
+                sent_data += res;
+                finished_sending = false;
+
+                // check if there was an error or EOF was reached
+                if (sent_data == file_size)
                 {
-                    cout << "[Session::get] File not open for reading\n";
+                    printf("PENIS - %d\n", res);
+                    finished_sending = true;
+                    fragment.payload_len = res;
+                }
+                else if (res != FRAGMENT_SIZE)
+                {
+                    cout << "[Session::get] Error reading from file\n";
+                    fclose(file);
                     return false;
                 }
-
-                file.read((char*)fragment.payload, FRAGMENT_SIZE);
-                fragment.payload_len = file ? FRAGMENT_SIZE : (size_t)file.gcount();
 
                 len = send(_client_socket, &fragment, sizeof(DataFragment), 0);
                 if (len < 0)
                 {
                     cout << "[Session::get] Error sending data fragment - " << len << endl;
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
                 cout << "[Session::get] Sent data fragment\n";
-                finished_sending = file ? false : true;
                 state = EGetStates::WaitForDataAck;
                 break;
             }
@@ -150,12 +165,12 @@ bool Session::get()
             case EGetStates::WaitForDataAck:
             {
                 DataFragmentAck ack;
-
+            static int i = 0;
                 len = read(_client_socket, reinterpret_cast<void *>(&ack), sizeof(ack));
                 if (len < 0)
                 {
                     cout << "[Session::get] Error reading data fragment ack - " << len << endl;
-                    file.close();
+                    fclose(file);
                     return false;
                 }
                 
@@ -163,13 +178,16 @@ bool Session::get()
                     || ack.header.size != sizeof(DataFragmentAck))
                 {
                     cout << "[Session::get] Invalid data fragment ack\n";
-                    file.close();
+                    printf("len: %d (sizeof: %d), op: %d, hdr.size: %d\n", len, sizeof(DataFragmentAck), ack.header.opcode, ack.header.size);
+                    fclose(file);
                     return false;
                 }
 
                 if (ack.status == EProtocolStatus::Success)
                 {
-                    cout << "[Session::get] Got data fragment ack\n";
+                    cout << "[Session::get] Got data fragment ack " << i << "\n";
+                    i++;
+                    printf("finish %d\n", finished_sending?1:0);
                     state = finished_sending ? EGetStates::WaitForDisconnect : EGetStates::SendData;
                 }
                 else
@@ -206,7 +224,7 @@ bool Session::get()
                 if (len < 0)
                 {
                     cout << "[Session::get] Error reading disconnect message - " << len << endl;
-                    file.close();
+                    fclose(file);
                     return false;
                 }
                 
@@ -214,7 +232,7 @@ bool Session::get()
                     || disconnect.header.size != sizeof(Disconnect))
                 {
                     cout << "[Session::get] Invalid disconnect message\n";
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
@@ -231,7 +249,7 @@ bool Session::get()
         }
     }
 
-    file.close();
+    fclose(file);
     return true;
 }
 
@@ -279,8 +297,8 @@ bool Session::put_fragments(PutRequest & request)
     std::string full_path = get_full_path(request.file_path);
 
     // open file for writing (if exists we override the existing data in the file)
-    ofstream file(full_path, ios::binary | ios::trunc);
-    if (!file.good())
+    FILE * file = fopen(full_path.c_str(), "wb");
+    if (file == nullptr)
     {
         cout << "[Session::put_fragments] Error opening file\n";
         return false;
@@ -312,7 +330,7 @@ bool Session::put_fragments(PutRequest & request)
                 if (len < 0)
                 {
                     cout << "[Session::put_fragments] Error reading data fragment - " << len << endl;
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
@@ -320,21 +338,28 @@ bool Session::put_fragments(PutRequest & request)
                     fragment.header.size != sizeof(fragment) || fragment.payload_len > FRAGMENT_SIZE)
                 {
                     cout << "[Session::put_fragments] Invalid data fragment\n";
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
                 if (fragment.payload_len + received_data > request.file_size)
                 {
                     cout << "[Session::put_fragments] Too much data received\n";
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
                 cout << "[Session::put_fragments] Got data fragment\n";
 
                 // write data to file
-                file.write(reinterpret_cast<char *>(fragment.payload), fragment.payload_len);
+                size_t res = fwrite(fragment.payload, sizeof(uint8_t), fragment.payload_len, file);
+                if (res != fragment.payload_len)
+                {
+                    cout << "[Session::put_fragments] Error writing to file\n";
+                    fclose(file);
+                    return false;
+                }
+
                 received_data += fragment.payload_len;
 
                 state = EPutStates::SendDataAck;
@@ -350,7 +375,7 @@ bool Session::put_fragments(PutRequest & request)
                 if (len < 0)
                 {
                     cout << "[Session::put_fragments] Error sending data fragment ack - " << len << endl;
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
@@ -377,7 +402,7 @@ bool Session::put_fragments(PutRequest & request)
                 if (len < 0)
                 {
                     cout << "[Session::put_fragments] Error reading disconnect message - " << len << endl;
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
@@ -385,7 +410,7 @@ bool Session::put_fragments(PutRequest & request)
                     disconnect.header.size != sizeof(disconnect))
                 {
                     cout << "[Session::put_fragments] Invalid disconnect message\n";
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
@@ -403,7 +428,7 @@ bool Session::put_fragments(PutRequest & request)
         }
     }
 
-    file.close();
+    fclose(file);
     return true;
 }
 
@@ -426,8 +451,8 @@ bool Session::put_single_block(PutRequest & request)
     }
 
     // open file for writing (if exists we override the existing data in the file)
-    ofstream file(full_path, ios::binary | ios::trunc);
-    if (!file.good())
+    FILE * file = fopen(full_path.c_str(), "wb");
+    if (file == nullptr)
     {
         cout << "[Session::put_single_block] Error opening file\n";
         return false;
@@ -460,7 +485,7 @@ bool Session::put_single_block(PutRequest & request)
                 {
                     cout << "[Session::put_single_block] Error reading data fragment - " << len << endl;
                     free(data);
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
@@ -469,7 +494,7 @@ bool Session::put_single_block(PutRequest & request)
                 {
                     cout << "[Session::put_single_block] Invalid data fragment\n";
                     free(data);
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
@@ -477,7 +502,7 @@ bool Session::put_single_block(PutRequest & request)
                 {
                     cout << "[Session::put_single_block] Too much data received\n";
                     free(data);
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
@@ -501,7 +526,7 @@ bool Session::put_single_block(PutRequest & request)
                 {
                     cout << "[Session::put_single_block] Error sending data fragment ack - " << len << endl;
                     free(data);
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
@@ -522,7 +547,13 @@ bool Session::put_single_block(PutRequest & request)
             case (EPutStates::Dump):
             {
                 // write the data we accumilated to the file
-                file.write(data, received_data);
+                size_t res = fwrite(data, sizeof(uint8_t), received_data, file);
+                if (res != received_data)
+                {
+                    cout << "[Session::put_single_block] Error writing to file\n";
+                    fclose(file);
+                    return false;
+                }
 
                 // dalete the data buffer
                 free(data);
@@ -541,7 +572,7 @@ bool Session::put_single_block(PutRequest & request)
                 {
                     cout << "[Session::put_single_block] Error reading disconnect message - " << len << endl;
                     free(data);
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
@@ -550,7 +581,7 @@ bool Session::put_single_block(PutRequest & request)
                 {
                     cout << "[Session::put_single_block] Invalid disconnect message\n";
                     free(data);
-                    file.close();
+                    fclose(file);
                     return false;
                 }
 
@@ -569,7 +600,7 @@ bool Session::put_single_block(PutRequest & request)
         }
     }
     
-    file.close();
+    fclose(file);
     return true;
 }
 
