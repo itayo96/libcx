@@ -32,8 +32,6 @@ extern "C" FILE *fopen(const char *filename, const char *mode)
 {
     _fopen = (decltype(_fopen))dlsym(RTLD_NEXT, "fopen");
 
-    puts("wrapped fopen\n");
-
     FILE * return_value = _fopen(filename, mode);
 
     size_t msg_length = message_builder::build_message(
@@ -53,8 +51,6 @@ extern "C" int fclose(FILE *stream)
 {
     _fclose = (decltype(_fclose))dlsym(RTLD_NEXT, "fclose");
 
-    puts("wrapped fclose\n");
-
     int return_value = _fclose(stream);
 
     size_t msg_length = message_builder::build_message(
@@ -72,8 +68,6 @@ extern "C" int fclose(FILE *stream)
 extern "C" int fputc(int character, FILE *stream)
 {
     _fputc = (decltype(_fputc))dlsym(RTLD_NEXT, "fputc");
-
-    puts("wrapped fputc\n");
 
     int return_value = _fputc(character, stream);
 
@@ -94,8 +88,6 @@ extern "C" int fputs(const char *str, FILE *stream)
 {
     _fputs = (decltype(_fputs))dlsym(RTLD_NEXT, "fputs");
 
-    puts("wrapped fputs\n");
-
     int return_value = _fputs(str, stream);
 
     size_t msg_length = message_builder::build_message(
@@ -115,8 +107,6 @@ extern "C" int fgetc(FILE *stream)
 {
     _fgetc = (decltype(_fgetc))dlsym(RTLD_NEXT, "fgetc");
 
-    puts("wrapped fgetc\n");
-
     int return_value = _fgetc(stream);
 
     size_t msg_length = message_builder::build_message(
@@ -134,8 +124,6 @@ extern "C" int fgetc(FILE *stream)
 extern "C" char * fgets(char *str, int n, FILE *stream)
 {
     _fgets = (decltype(_fgets))dlsym(RTLD_NEXT, "fgets");
-
-    puts("wrapped fgets\n");
 
     char * return_value = _fgets(str, n, stream);
 
@@ -156,8 +144,6 @@ extern "C" char * fgets(char *str, int n, FILE *stream)
 extern "C" size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
     _fread = (decltype(_fread))dlsym(RTLD_NEXT, "fread");
-
-    puts("wrapped fread\n");
 
     size_t return_value = _fread(ptr, size, nmemb, stream);
 
@@ -180,8 +166,6 @@ extern "C" size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *strea
 {
     _fwrite = (decltype(_fwrite))dlsym(RTLD_NEXT, "fwrite");
 
-    puts("wrapped fwrite\n");
-
     size_t return_value = _fwrite(ptr, size, nmemb, stream);
 
     size_t msg_length = message_builder::build_message(
@@ -203,8 +187,6 @@ extern "C" int feof(FILE *stream)
 {
     _feof = (decltype(_feof))dlsym(RTLD_NEXT, "feof");
 
-    puts("wrapped feof\n");
-
     int return_value = _feof(stream);
 
     size_t msg_length = message_builder::build_message(
@@ -222,8 +204,6 @@ extern "C" int feof(FILE *stream)
 extern "C" int fseek(FILE *stream, long int offset, int whence)
 {
     _fseek = (decltype(_fseek))dlsym(RTLD_NEXT, "fseek");
-
-    puts("wrapped fseek\n");
 
     int return_value = _fseek(stream, offset, whence);
 
@@ -245,8 +225,6 @@ extern "C" long int ftell(FILE *stream)
 {
     _ftell = (decltype(_ftell))dlsym(RTLD_NEXT, "ftell");
 
-    puts("wrapped ftell\n");
-
     long int return_value = _ftell(stream);
 
     size_t msg_length = message_builder::build_message(
@@ -264,8 +242,6 @@ extern "C" long int ftell(FILE *stream)
 extern "C" int fprintf(FILE *stream, const char *format, ...)
 {
     _fprintf = (decltype(_fprintf))dlsym(RTLD_NEXT, "fprintf");
-
-    puts("wrapped fprintf\n");
 
     va_list args;
     va_start(args, format);
@@ -288,8 +264,6 @@ extern "C" int fprintf(FILE *stream, const char *format, ...)
 extern "C" int fscanf(FILE *stream, const char *format, ...)
 {
     _fscanf = (decltype(_fscanf))dlsym(RTLD_NEXT, "fscanf");
-
-    puts("wrapped fscanf\n");
 
     va_list args;
     va_start(args, format);

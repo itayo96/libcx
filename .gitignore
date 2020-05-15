@@ -135,4 +135,4 @@ dmypy.json
 test/env
 test/example/bin
 wrapper/bin
-supervisor/db/file_report_db
+supervisor/db/*

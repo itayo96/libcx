@@ -1,34 +1,44 @@
-from logging import getLogger
-import client_handler.message_structs
+import sys
+import glob
+import research.dataframe_generation
+import  research.analyze
+from logging import getLogger, ERROR
 from utils.logging import setup_logging
-import research.files_dataset
-import pickle
+
 
 log = getLogger(__name__)
 
 
 def main():
     setup_logging()
-    dataset = generate_dataset()
+    getLogger("research.files_dataset").setLevel(ERROR)
+    getLogger("matplotlib.font_manager").setLevel(ERROR)
+
+    if sys.argv[1] == "dataframe":
+        generate_dataframe()
+    elif sys.argv[2] == "analyze":
+        analyze()
+    else:
+        log.error("Unknown parameter: [dataframe/analyze]")
+
+
+def analyze():
+    files = glob.glob("research/dataframe*.csv")
+    for d in map(lambda f: research.dataframe_generation.load_dataframe(f), files):
+        research.analyze.analyze(d)
+
     pass
 
 
-def generate_dataset():
-    dataset = research.files_dataset.dataset()
-    file_db = open("db/file_report_db", 'rb')
-    reports = []
-    while True:
-        try:
-            x = pickle.load(file_db)
-            dataset.add(load_report_object(x[2], x[3]), x[0])
-        except EOFError:
-            break
-    file_db.close()
-    return dataset
-
-
-def load_report_object(id, data):
-    return client_handler.message_structs.reports[id].from_bytes(data)
+def generate_dataframe():
+    log.info("Starting dataframe generation process...")
+    num = 0
+    for d in generate_dataframe():
+        path = f"db/dataframe{num}.csv"
+        log.info(f"Saving into {path}")
+        d.to_csv(path)
+        num += 1
+    log.info("Done")
 
 
 if __name__ == '__main__':

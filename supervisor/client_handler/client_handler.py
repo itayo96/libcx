@@ -1,6 +1,4 @@
 from logging import getLogger
-from .research_logger import get_logger
-import struct
 from .message_structs import *
 import pickle
 from datetime import datetime
@@ -8,18 +6,22 @@ from datetime import datetime
 log = getLogger(__name__)
 
 
-def parse_memoey_report(pid: int, lib_call: int, report):
-    print("Not Implemented :(")
+def dump_memory_reports(pid: int, lib_call: int, report):
+    raise NotImplementedError
 
 
-def parse_file_report(pid: int, lib_call: int, report):
+def dump_file_operations_reports(pid: int, lib_call: int, report):
     """
     Parse reports that are related to file calls - PICKLE them!
     """
     file_db = open("db/file_report_db", 'ab')
     log.debug(f"Writing to db/file_report_dp {report}")
-    pickle.dump((datetime.now(), pid, lib_call, bytes(report)),
-                file_db)  # tuple (timestamp, pid, libcall, report object as bytes)
+    pickle.dump({
+        "timestamp": datetime.now(),
+        "pid": pid,
+        "lib_call": lib_call,
+        "data": bytes(report)
+    }, file_db)  # tuple (timestamp, pid, libcall, report object as bytes)
     file_db.close()
 
     """
@@ -47,19 +49,18 @@ class ClientHandler:
     Dictionary of reports for all supported lib calls
     """
 
-
     """
     Dictionary of report parsers
     """
     report_parsers = {
         'memory': {
             'reports': [0],
-            'parser': parse_memoey_report
+            'parser':  dump_memory_reports
         },
 
         'files': {
             'reports': [*range(1, 14)],
-            'parser': parse_file_report
+            'parser': dump_file_operations_reports
         }
     }
 
