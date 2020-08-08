@@ -6,43 +6,11 @@
 
 #IncludeRegexTransform: 
 
-/home/yair/Projects/LibCx/libcx/ftp/server/src/main.cpp
-iostream
--
-argh.h
-/home/yair/Projects/LibCx/libcx/ftp/server/src/argh.h
-messages.h
-/home/yair/Projects/LibCx/libcx/ftp/server/src/messages.h
-server.h
-/home/yair/Projects/LibCx/libcx/ftp/server/src/server.h
-
-/home/yair/Projects/LibCx/libcx/ftp/server/src/server.cpp
-server.h
-/home/yair/Projects/LibCx/libcx/ftp/server/src/server.h
-server_config.h
-/home/yair/Projects/LibCx/libcx/ftp/server/src/server_config.h
-
 /home/yair/Projects/LibCx/libcx/ftp/server/src/session.cpp
 session.h
 /home/yair/Projects/LibCx/libcx/ftp/server/src/session.h
 utils.h
 /home/yair/Projects/LibCx/libcx/ftp/server/src/utils.h
-
-include/server.h
-iostream
--
-cstring
--
-sys/types.h
--
-sys/socket.h
--
-netinet/in.h
--
-pthread.h
--
-session.h
-include/session.h
 
 include/server_config.h
 
@@ -65,24 +33,6 @@ messages.h
 include/messages.h
 server_config.h
 include/server_config.h
-
-shared/argh.h
-algorithm
--
-sstream
--
-limits
--
-string
--
-vector
--
-set
--
-map
--
-cassert
--
 
 shared/messages.h
 sys/types.h

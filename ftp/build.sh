@@ -7,10 +7,10 @@ GREEN='\033[0;32m'
 NC='\033[0m'
 
 # build and install the client
-cd client/build 
+cd client/
 
 echo "${YELLOW} > Generating makefile for client ... ${NC}"
-cmake ..
+cmake CMakeLists.txt
 if [ $? -eq 0 ]; then
     echo "${GREEN} Successfully generated makefile for client ${NC}"
 else 
@@ -28,13 +28,13 @@ else
 fi
 
 echo "${YELLOW} > Installing SFTP client ... ${NC}"
-cp ftp-client ../../build
+cp ftp-client ../build
 
 # build and install the server
-cd ../../server/build
+cd ../server
 
 echo "${YELLOW} > Generating makefile for server ... ${NC}"
-cmake ..
+cmake CMakeLists.txt
 if [ $? -eq 0 ]; then
     echo "${GREEN} Successfully generated makefile for server ${NC}"
 else 
@@ -52,6 +52,6 @@ else
 fi
 
 echo "${YELLOW} > Installing SFTP server ... ${NC}"
-cp ftp-server ../../build
+cp ftp-server ../build
 
 echo "${GREEN} > Done! ${NC}"
