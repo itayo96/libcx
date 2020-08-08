@@ -25,6 +25,8 @@ initializer::initializer()
     printf("Starting with version 1.0\n");
     pid = getpid();
 
+    _cache_i = 0;
+
     fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd == -1)
     {
@@ -61,9 +63,25 @@ void initializer::report(size_t message_size)
     // }
     // printf("\n");
 
-    int actual_size = write(fd, buffer, message_size);
-    if (actual_size != message_size)
+    memcpy(_cache[_cache_i].data, buffer, message_size);
+    _cache[_cache_i].size = message_size;
+    _cache_i++;
+
+    if (_cache_i == MAX_MESSAGES_IN_CACHE) 
     {
-        printf("error sending connection message - %d\n", actual_size);
+        _send();
+        _cache_i = 0;
+    }
+}
+
+void initializer::_send() 
+{
+    for (int i = 0; i<_cache_i; i++)
+    {
+        int actual_size = write(fd, _cache[i].data, _cache[i].size);
+        if (actual_size != _cache[i].size)
+        {
+            printf("error sending connection message - %d\n", actual_size);
+        }
     }
 }
