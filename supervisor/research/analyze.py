@@ -40,8 +40,7 @@ class analyze_data:
         large_groups_stats = large_groups_files.groupby(cols_to_group_by)[self.cols_to_calc_stats].agg(['mean', 'std'])
 
         files_not_in_large_group = df[~df.name.isin(large_groups_files.name)]
-        files_not_in_large_group_stats = files_not_in_large_group.groupby(["name", "open_mode"])
-        files_not_in_large_group_stats[self.cols_to_calc_stats].agg(['mean', 'std'])
+        files_not_in_large_group_stats = files_not_in_large_group.groupby(["name", "open_mode"])[self.cols_to_calc_stats].agg(['mean', 'std'])
 
         self.large_groups_stats = large_groups_stats
         self.files_not_in_large_group_stats = files_not_in_large_group_stats

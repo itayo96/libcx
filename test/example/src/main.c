@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define ACTIONS_URL "https://raw.githubusercontent.com/itayo96/libcx/master/test/resources/actions"
+#define ACTIONS_URL "https://raw.githubusercontent.com/itayo96/libcx/master/test/resources/actions2"
 
 FILE* g_log = NULL;
 FILE* g_devurandon = NULL;
