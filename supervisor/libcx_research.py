@@ -19,6 +19,8 @@ def main():
         generate_dataframe()
     elif sys.argv[1] == "analyze":
         analyze()
+    elif sys.argv[1] == "detect":
+        detect()
     else:
         log.error("Unknown parameter: [dataframe/analyze]")
 
@@ -33,11 +35,11 @@ def analyze():
     pass
 
 
-def find_anomalies():
+def detect():
     files = glob.glob("db/*.csv")
     _ = map(lambda f: research.dataframe_generation.load_dataframe(f), files)
 
-    load_analyze_data("db/analyze_data.anlzdat").find_anomalies(next(_))
+    load_analyze_data("db/analyze_data.anlzdat").detect(next(_))
 
     pass
 
@@ -54,17 +56,19 @@ def generate_dataframe():
 
 
 def save_analyze_data(d, filename):
-    f = open(filename, 'w')
+    f = open(filename, 'wb')
     pickle.dump(d, f)
     f.close()
 
 
 def load_analyze_data(filename):
-    f = open(filename, 'r')
+    f = open(filename, 'rb')
     d = pickle.load(f)
     f.close()
 
     return d
 
+
 if __name__ == '__main__':
     main()
+

@@ -38,16 +38,16 @@ def generate_dataframe():
                     "writes_amount": len(file.writes),
                     "writes_count_mean": writes_count_stats[0],
                     "writes_count_normal_stddev": writes_count_stats[1],
-                    "writes_count_skewness": writes_count_stats[2],
-                    "writes_count_kurtosis": writes_count_stats[3],
+                    #"writes_count_skewness": writes_count_stats[2],
+                    #"writes_count_kurtosis": writes_count_stats[3],
                     "writes_size_mean": writes_size_stats[0],
                     "writes_size_normal_stddev": writes_size_stats[1],
-                    "writes_size_skewness": writes_size_stats[2],
-                    "writes_size_kurtosis": writes_size_stats[3],
+                    #"writes_size_skewness": writes_size_stats[2],
+                    #"writes_size_kurtosis": writes_size_stats[3],
                     "fputss_mean": fputss_stats[0],
                     "fputss_normal_stddev": fputss_stats[1],
-                    "fputss_skewness": fputss_stats[2],
-                    "fputss_kurtosis": fputss_stats[3],
+                    #"fputss_skewness": fputss_stats[2],
+                    #"fputss_kurtosis": fputss_stats[3],
                 })
 
         yield DataFrame(record_list)
